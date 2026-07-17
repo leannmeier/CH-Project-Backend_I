@@ -1,0 +1,56 @@
+[
+    {
+        "id": 1,
+        "name": "Cambio de aceite y filtros",
+        "description": "Reemplazo de aceite de motor y filtros de aceite, aire y combustible para garantizar el correcto funcionamiento del vehículo.",
+        "duration": "1 hora",
+        "price": 80,
+        "category": "Mantenimiento",
+        "available": true
+    },
+    {
+        "id": 2,
+        "name": "Alineación y balanceo",
+        "description": "Ajuste de la alineación de las ruedas y balanceo para mejorar la estabilidad y prolongar la vida útil de los neumáticos.",
+        "duration": "1 hora 30 minutos",
+        "price": 60,
+        "category": "Neumáticos",
+        "available": true
+    },
+    {
+        "id": 3,
+        "name": "Revisión de frenos",
+        "description": "Inspección completa del sistema de frenos, incluyendo pastillas, discos y líquido de frenos.",
+        "duration": "2 horas",
+        "price": 90,
+        "category": "Frenos",
+        "available": true
+    },
+    {
+        "id": 4,
+        "name": "Diagnóstico electrónico",
+        "description": "Escaneo computarizado para detectar fallas electrónicas y códigos de error del vehículo.",
+        "duration": "45 minutos",
+        "price": 50,
+        "category": "Diagnóstico",
+        "available": false
+    },
+    {
+        "id": 5,
+        "name": "Cambio de batería",
+        "description": "Reemplazo de la batería del vehículo y verificación del sistema de carga.",
+        "duration": "30 minutos",
+        "price": 120,
+        "category": "Electricidad",
+        "available": true
+    },
+    {
+        "id": 6,
+        "name": "Lavado premium",
+        "description": "Lavado exterior, limpieza interior, aspirado y encerado para dejar el vehículo en óptimas condiciones.",
+        "duration": "2 horas 30 minutos",
+        "price": 45,
+        "category": "Estética",
+        "available": true
+    }
+]
