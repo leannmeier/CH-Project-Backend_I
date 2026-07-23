@@ -5,7 +5,7 @@ Sistema backend para la gestión de servicios, turnos y reservas, desarrollado c
 ## Estado del proyecto
 
 - [x] Módulo 1: Configuración base, ESM, dotenv, ServiceManager (JSON)
-- [ ] Módulo 2: Servidor con Express y API REST
+- [x] Módulo 2: Servidor con Express y API REST
 - [ ] Módulo 3: Persistencia con FileSystem
 - [ ] Módulo 4: Routers y Controllers
 - [ ] Módulo 5: Arquitectura en Capas: DAO y Repository
@@ -15,19 +15,25 @@ Sistema backend para la gestión de servicios, turnos y reservas, desarrollado c
 - [ ] Módulo 9: Proyecto Final integrador
 
 ## Funcionalidades implementadas:
+
 - Configuración base del proyecto con Node.js y ESM
 - Gestión segura de variables de entorno con `dotenv` y validación fail-fast
 - Administrador de servicios (`ServiceManager`) con persistencia en JSON
+- Servidor Express con API REST para el recurso `services`
+- Router propio (`services.router.js`) con `express.Router()`, separado de `app.js`
+- 5 endpoints REST conectados a `ServiceManager`, con filtros por query params y validación de datos
 
-En próximos módulos se incorporarán Express, arquitectura en capas, MongoDB con Mongoose, vistas con Handlebars, WebSockets y validaciones avanzadas.
+En próximos módulos se incorporarán arquitectura en capas, MongoDB con Mongoose, vistas con Handlebars, WebSockets y validaciones avanzadas.
 
 ## Instalación
 
 Clonar el repositorio e instalar las dependencias:
 
+```bash
 git clone https://github.com/leannmeier/CH-Project-Backend_I.git
 cd "CH-Project-Backend_I"
 npm install
+```
 
 ## Variables de entorno
 
@@ -62,20 +68,16 @@ backend-turnos-reservas/
 │   ├── server.js
 │   ├── config/
 │   │   └── env.config.js
-│   ├── managers/
-│   │   └── ServiceManager.js
-│   ├── utils/
-│   │   ├── findById.js
-│   │   └── newId.js
 │   ├── data/
 │   │   └── services.json
+│   ├── managers/
+│   │   └── ServiceManager.js
 │   ├── routes/
-│   ├── controllers/
-│   ├── services/
-│   ├── repositories/
-│   ├── dao/
-│   ├── models/
-│   └── middlewares/
+|   |   └── services.router.js
+│   └── utils/
+│       ├── findById.js
+│       └── newId.js
+|
 ├── .env.example
 ├── .gitignore
 ├── package.json
@@ -112,74 +114,164 @@ Un servicio representa una actividad que puede reservarse dentro del sistema de 
 
 La persistencia de los servicios se realiza en `src/data/services.json`.
 
-## ServiceManager
+## Endpoints de la API
 
-Clase encargada de administrar los servicios del sistema. Todos sus métodos leen y escriben directamente sobre `services.json`.
+Todas las respuestas siguen una estructura consistente:
 
-### `getServices()`
-
-Devuelve un array con todos los servicios existentes.
-
-```javascript
-const servicios = manager.getServices();
-console.log(servicios);
+```json
+{ "status": "success", "payload": {} }
 ```
 
-### `getServiceById(id)`
+o, en caso de error:
 
-Devuelve el servicio correspondiente al `id` recibido, o `null` si no existe.
-
-```javascript
-const servicio = manager.getServiceById(2);
-console.log(servicio); // { id: 2, name: 'Alineación y balanceo', ... }
-
-const inexistente = manager.getServiceById(999);
-console.log(inexistente); // null
+```json
+{ "status": "error", "message": "" }
 ```
 
-### `addService(serviceData)`
+### `GET /api/services`
 
-Agrega un nuevo servicio. El `id` se genera automáticamente y no debe incluirse en `serviceData`. Valida que estén presentes los campos obligatorios (`name`, `description`, `duration`, `price`, `category`, `available`); si falta alguno, rechaza la creación y devuelve `null`.
+Devuelve todos los servicios. Acepta filtros opcionales por query params.
 
-```javascript
-const nuevoServicio = manager.addService({
-  name: "Tapicero",
-  description: "Rejuvenecimiento de asientos de cuero",
-  duration: "3 horas",
-  price: 40,
-  category: "Tapicería",
-  available: true
-});
-console.log(nuevoServicio); // { id: 7, name: 'Tapicero', ... }
+| Query param | Ejemplo | Descripción |
+|---|---|---|
+| `category` | `?category=Mantenimiento` | Filtra por categoría exacta |
+| `available` | `?available=true` | Filtra por disponibilidad |
 
-const incompleto = manager.addService({ name: "Servicio sin datos" });
-console.log(incompleto); // null (campos obligatorios faltantes)
+
+```http
+GET /api/services
+GET /api/services?category=Mantenimiento
+GET /api/services?available=true
 ```
 
-### `updateService(id, updatedData)`
-
-Actualiza un servicio existente combinando los datos actuales con los nuevos. El `id` original nunca puede modificarse, aunque se incluya en `updatedData`. Devuelve `null` si el servicio no existe.
-
-```javascript
-const actualizado = manager.updateService(2, {
-  price: 90,
-  available: false
-});
-console.log(actualizado); // servicio con id 2, precio y disponibilidad actualizados
+**Respuesta 200:**
+```json
+{ "status": "success", "payload": [ /* array de servicios */ ] }
 ```
 
-### `deleteService(id)`
+### `GET /api/services/:sid`
 
-Elimina el servicio correspondiente al `id` recibido. Devuelve el servicio eliminado, o `null` si no existía.
+Devuelve un servicio según su `id`.
 
-```javascript
-const eliminado = manager.deleteService(3);
-console.log(eliminado); // servicio eliminado, o null si no existía
+```http
+GET /api/services/1
+```
+
+- **200** si el servicio existe: `{ "status": "success", "payload": { ... } }`
+- **404** si no existe: `{ "status": "error", "message": "Servicio no encontrado" }`
+
+### `POST /api/services`
+
+Crea un nuevo servicio. El `id` se genera automáticamente y **no debe incluirse** en el body.
+
+```http
+POST /api/services
+Content-Type: application/json
+
+{
+  "name": "Tapicero",
+  "description": "Rejuvenecimiento de asientos de cuero",
+  "duration": "3 horas",
+  "price": 40,
+  "category": "Tapicería",
+  "available": true
+}
+```
+
+- **201** si se crea correctamente: `{ "status": "success", "payload": { ... } }`
+- **400** si faltan campos obligatorios (`name`, `description`, `duration`, `price`, `category`, `available`): `{ "status": "error", "message": "Faltan campos obligatorios: ..." }`
+
+### `PUT /api/services/:sid`
+
+Actualiza un servicio existente. El `id` original no puede modificarse aunque se incluya en el body.
+
+```http
+PUT /api/services/1
+Content-Type: application/json
+
+{
+  "price": 999,
+  "available": false
+}
+```
+
+- **200** si el servicio existe: `{ "status": "success", "payload": { ... } }`
+- **404** si no existe: `{ "status": "error", "message": "Servicio no encontrado" }`
+
+### `DELETE /api/services/:sid`
+
+Elimina un servicio según su `id`.
+
+```http
+DELETE /api/services/1
+```
+
+- **200** si se elimina correctamente: `{ "status": "success", "payload": { ... } }`
+- **404** si no existe: `{ "status": "error", "message": "Servicio no encontrado" }`
+
+## Cómo probar la API
+
+Se puede probar con cualquier cliente HTTP: [Postman](https://www.postman.com/), [Thunder Client](https://www.thunderclient.com/) (extensión de VS Code) o la extensión [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client), usada durante el desarrollo de este proyecto.
+
+Ejemplo de archivo `.http` para REST Client:
+```http
+### Para mostrar todos los servicios
+GET http://localhost:8081/api/services
+
+### Para mostrar un servicio por su id
+GET http://localhost:8081/api/services/5
+
+### Para crear un nuevo servicio
+POST http://localhost:8081/api/services
+Content-Type: application/json
+
+{
+    "name": "Programador JR",
+    "description" : "Realiza pequeñas correcciones y debuguea" ,
+    "duration" : "4 horas" ,
+    "price" : 100,
+    "category" : "IT",
+    "available" :  true
+}
+### Para crear un nuevo servicio con campos faltantes
+POST http://localhost:8081/api/services
+Content-Type: application/json
+
+{
+    "name": "Programador SSR",
+    "duration" : "8 horas" ,
+    "price" : 200,
+    "category" : "IT",
+    "available" :  true
+}
+
+### Actualizar un servicio
+PUT http://localhost:8081/api/services/7
+Content-Type: application/json
+
+{
+  "price": 999
+}
+
+### Actualizar un servicio con id inexistente
+PUT http://localhost:8081/api/services/8345
+Content-Type: "application/json"
+
+{
+    "price" : 150
+}
+
+### Eliminar un servicio
+DELETE http://localhost:8081/api/services/1
+
+### Eliminar un servicio con id inexistente
+DELETE http://localhost:8081/api/services/13434
 ```
 
 ## Tecnologías utilizadas
 
 - Node.js (ESM)
+- Express
 - dotenv
 
 ## Autor

@@ -41,7 +41,7 @@ export class ServiceManager{
             console.log('Nuevo servicio agregado');
         }
         else{
-            console.log(`Faltan campos obligatorios: ${faltantes.join(', ')}` );
+            nuevoServicio = { error: `Faltan campos obligatorios: ${faltantes.join(', ')}` };
         }
         return nuevoServicio;
     }
@@ -54,6 +54,7 @@ export class ServiceManager{
             servicioActualizado = { ...servicioExistente, ...updateData, id: servicioExistente.id }
             serviciosActualizados = services.map(s => s.id === Number(id) ? servicioActualizado : s )
             this.#saveServices(serviciosActualizados);
+            console.log('Servicio actualizado');
         }
         return servicioActualizado;
     }
@@ -64,6 +65,7 @@ export class ServiceManager{
         if(eliminarServicio){
             serviciosActualizados = services.filter(s => s.id !== Number(id))
             this.#saveServices(serviciosActualizados);
+            console.log('Servicio eliminado');
         }
         return eliminarServicio;
     }

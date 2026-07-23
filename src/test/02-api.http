@@ -1,0 +1,52 @@
+### Para mostrar todos los servicios
+GET http://localhost:8081/api/services
+
+### Para mostrar un servicio por su id
+GET http://localhost:8081/api/services/5
+
+### Para crear un nuevo servicio
+POST http://localhost:8081/api/services
+Content-Type: application/json
+
+{
+    "name": "Programador JR",
+    "description" : "Realiza pequeñas correcciones y debuguea" ,
+    "duration" : "4 horas" ,
+    "price" : 100,
+    "category" : "IT",
+    "available" :  true
+}
+### Para crear un nuevo servicio con campos faltantes
+POST http://localhost:8081/api/services
+Content-Type: application/json
+
+{
+    "name": "Programador SSR",
+    "duration" : "8 horas" ,
+    "price" : 200,
+    "category" : "IT",
+    "available" :  true
+}
+
+### Actualizar un servicio
+PUT http://localhost:8081/api/services/7
+Content-Type: application/json
+
+{
+  "price": 999
+}
+
+### Actualizar un servicio con id inexistente
+PUT http://localhost:8081/api/services/8345
+Content-Type: "application/json"
+
+{
+    "price" : 150
+}
+
+### Eliminar un servicio
+DELETE http://localhost:8081/api/services/1
+
+### Eliminar un servicio con id inexistente
+DELETE http://localhost:8081/api/services/13434
+
