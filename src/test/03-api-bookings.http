@@ -1,0 +1,73 @@
+### obtener una reserva por su id
+GET http://localhost:8081/api/bookings/6
+
+### Buscamos una reserva que no exista
+GET http://localhost:8081/api/bookings/90
+
+### crear una nueva reserva
+POST http://localhost:8081/api/bookings
+Content-Type: application/json;
+
+{
+    "clientName": "Lionel Messi",
+    "clientEmail": "leomessi10@gmail.com",
+    "date": "06-24-1987",
+    "time": "00:00:06",
+    "status": "Confirmada",
+    "services": []
+}
+
+### crear una nueva reserva con campos faltantes
+POST http://localhost:8081/api/bookings
+Content-Type: application/json;
+
+{
+    "clientName": "CR7",
+    "clientEmail": "siuu7@gmail.com",
+    "status": "Eliminado",
+    "services": []
+}
+
+### agrego un servicio a una reserva. todo valido (bid=1, sid=2) (todo nuevo. repetimos la misma peticion y deberia incrementar en 1 quantity de service con id=2)
+POST http://localhost:8081/api/bookings/1/services/2
+Content-Type: application/json;
+
+[
+    {
+        "service": 1,
+        "quantity": 1
+    }
+]
+
+### agrego un servicio a una reserva. con campos inexistentes (reserva valida con servicio invalido)
+POST http://localhost:8081/api/bookings/1/services/2324234
+Content-Type: application/json;
+
+[
+    {
+        "service": 1,
+        "quantity": 1
+    }
+]
+
+### agrego un servicio a una reserva. con campos inexistentes (reserva invalida con servicio valido)
+POST http://localhost:8081/api/bookings/1213123/services/3
+Content-Type: application/json;
+
+[
+    {
+        "service": 1,
+        "quantity": 1
+    }
+]
+
+### agrego un servicio a una reserva. con campos inexistentes (ambos ids invalidos)
+POST http://localhost:8081/api/bookings/1213123/services/323
+Content-Type: application/json;
+
+[
+    {
+        "service": 1,
+        "quantity": 1
+    }
+]

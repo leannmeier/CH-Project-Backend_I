@@ -6,7 +6,7 @@ Sistema backend para la gestión de servicios, turnos y reservas, desarrollado c
 
 - [x] Módulo 1: Configuración base, ESM, dotenv, ServiceManager (JSON)
 - [x] Módulo 2: Servidor con Express y API REST
-- [ ] Módulo 3: Persistencia con FileSystem
+- [x] Módulo 3: Persistencia con FileSystem
 - [ ] Módulo 4: Routers y Controllers
 - [ ] Módulo 5: Arquitectura en Capas: DAO y Repository
 - [ ] Módulo 6: MongoDB Atlas y Mongoose
@@ -18,12 +18,14 @@ Sistema backend para la gestión de servicios, turnos y reservas, desarrollado c
 
 - Configuración base del proyecto con Node.js y ESM
 - Gestión segura de variables de entorno con `dotenv` y validación fail-fast
-- Administrador de servicios (`ServiceManager`) con persistencia en JSON
-- Servidor Express con API REST para el recurso `services`
-- Router propio (`services.router.js`) con `express.Router()`, separado de `app.js`
-- 5 endpoints REST conectados a `ServiceManager`, con filtros por query params y validación de datos
+- Servidor Express con API REST para los recursos `services` y `bookings`
+- Routers propios (`services.router.js`, `bookings.router.js`) con `express.Router()`, separados de `app.js`
+- `ServiceManager`: CRUD completo de servicios, con filtros por query params y validación de datos
+- `BookingManager`: creación y consulta de reservas, y asociación de servicios existentes a una reserva
+- Persistencia asíncrona en archivos JSON con `fs.promises` (`async`/`await`), sin bloquear el Event Loop
+- Manejo de errores centralizado en los métodos privados de lectura/escritura de cada manager
 
-En próximos módulos se incorporarán arquitectura en capas, MongoDB con Mongoose, vistas con Handlebars, WebSockets y validaciones avanzadas.
+En próximos módulos se incorporarán arquitectura en capas (DAO/Repository), MongoDB con Mongoose, vistas con Handlebars, WebSockets y validaciones avanzadas.
 
 ## Instalación
 
@@ -58,6 +60,7 @@ La aplicación valida al iniciar que las variables críticas estén presentes. S
 npm start       # ejecuta el proyecto
 npm run dev     # ejecuta el proyecto con reinicio automático ante cambios (node --watch)
 ```
+El servidor queda disponible en `http://localhost:<PORT>` (por defecto, `http://localhost:8081`).
 
 ## Estructura del proyecto
 
@@ -69,11 +72,18 @@ backend-turnos-reservas/
 │   ├── config/
 │   │   └── env.config.js
 │   ├── data/
+│   │   ├── bookings.json
 │   │   └── services.json
 │   ├── managers/
+│   │   ├── BookingManager.js
 │   │   └── ServiceManager.js
 │   ├── routes/
+│   │   ├── bookings.router.js
 |   |   └── services.router.js
+│   ├── test/
+│   │   ├── 01-test-services-manager.js
+│   │   ├── 02-api-services.http
+│   │   └── 03-api-bookings.http
 │   └── utils/
 │       ├── findById.js
 │       └── newId.js
@@ -114,6 +124,41 @@ Un servicio representa una actividad que puede reservarse dentro del sistema de 
 
 La persistencia de los servicios se realiza en `src/data/services.json`.
 
+## Recurso: Bookings
+
+Una reserva representa un turno solicitado por un cliente, con uno o más servicios asociados.
+
+### Estructura de una reserva
+
+```json
+{
+  "id": 1,
+  "clientName": "Juan Pérez",
+  "clientEmail": "juanperez@gmail.com",
+  "date": "01-01-2026",
+  "time": "00:00:01",
+  "status": true,
+  "services": [
+    { "service": 1, "quantity": 1 }
+  ]
+}
+```
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `id` | number | Identificador único, generado automáticamente. |
+| `clientName` | string | Nombre del cliente que realiza la reserva. |
+| `clientEmail` | string | Email de contacto del cliente. |
+| `date` | string | Fecha del turno. |
+| `time` | string | Horario del turno. |
+| `status` | boolean | Estado de la reserva. |
+| `services` | array | Servicios asociados a la reserva. Puede iniciarse vacío. |
+
+Cada entrada de `services` tiene la forma `{ service: idDelServicio, quantity: number }`. Si un servicio ya está asociado a la reserva y se vuelve a agregar, se incrementa `quantity` en vez de crear una entrada duplicada.
+
+La persistencia de las reservas se realiza en `src/data/bookings.json`. La validación de que un servicio exista al asociarlo a una reserva se delega en `ServiceManager`, evitando duplicar la lógica de acceso a `services.json`.
+
+
 ## Endpoints de la API
 
 Todas las respuestas siguen una estructura consistente:
@@ -127,6 +172,7 @@ o, en caso de error:
 ```json
 { "status": "error", "message": "" }
 ```
+### Services
 
 ### `GET /api/services`
 
@@ -137,25 +183,11 @@ Devuelve todos los servicios. Acepta filtros opcionales por query params.
 | `category` | `?category=Mantenimiento` | Filtra por categoría exacta |
 | `available` | `?available=true` | Filtra por disponibilidad |
 
-
-```http
-GET /api/services
-GET /api/services?category=Mantenimiento
-GET /api/services?available=true
-```
-
-**Respuesta 200:**
-```json
-{ "status": "success", "payload": [ /* array de servicios */ ] }
-```
+- **200**: `{ "status": "success", "payload": [ /* array de servicios */ ] }`
 
 ### `GET /api/services/:sid`
 
 Devuelve un servicio según su `id`.
-
-```http
-GET /api/services/1
-```
 
 - **200** si el servicio existe: `{ "status": "success", "payload": { ... } }`
 - **404** si no existe: `{ "status": "error", "message": "Servicio no encontrado" }`
@@ -164,36 +196,12 @@ GET /api/services/1
 
 Crea un nuevo servicio. El `id` se genera automáticamente y **no debe incluirse** en el body.
 
-```http
-POST /api/services
-Content-Type: application/json
-
-{
-  "name": "Tapicero",
-  "description": "Rejuvenecimiento de asientos de cuero",
-  "duration": "3 horas",
-  "price": 40,
-  "category": "Tapicería",
-  "available": true
-}
-```
-
 - **201** si se crea correctamente: `{ "status": "success", "payload": { ... } }`
 - **400** si faltan campos obligatorios (`name`, `description`, `duration`, `price`, `category`, `available`): `{ "status": "error", "message": "Faltan campos obligatorios: ..." }`
 
 ### `PUT /api/services/:sid`
 
 Actualiza un servicio existente. El `id` original no puede modificarse aunque se incluya en el body.
-
-```http
-PUT /api/services/1
-Content-Type: application/json
-
-{
-  "price": 999,
-  "available": false
-}
-```
 
 - **200** si el servicio existe: `{ "status": "success", "payload": { ... } }`
 - **404** si no existe: `{ "status": "error", "message": "Servicio no encontrado" }`
@@ -202,70 +210,74 @@ Content-Type: application/json
 
 Elimina un servicio según su `id`.
 
-```http
-DELETE /api/services/1
-```
-
 - **200** si se elimina correctamente: `{ "status": "success", "payload": { ... } }`
 - **404** si no existe: `{ "status": "error", "message": "Servicio no encontrado" }`
 
+### Bookings
+
+#### `POST /api/bookings`
+
+Crea una nueva reserva. El `id` se genera automáticamente. El campo `services` es opcional; si no se envía, la reserva se crea con `services: []`.
+
+```http
+POST /api/bookings
+Content-Type: application/json
+
+{
+  "clientName": "Ana Torres",
+  "clientEmail": "anatorres@gmail.com",
+  "date": "15-08-2026",
+  "time": "10:30",
+  "status": true
+}
+```
+
+- **201** si se crea correctamente: `{ "status": "success", "payload": { ... } }`
+- **400** si faltan campos obligatorios: `{ "status": "error", "message": "Faltan campos obligatorios: ..." }`
+
+#### `GET /api/bookings/:bid`
+
+Devuelve una reserva según su `id`.
+
+- **200** si existe: `{ "status": "success", "payload": { ... } }`
+- **404** si no existe: `{ "status": "error", "message": "Reserva no encontrada" }`
+
+#### `POST /api/bookings/:bid/services/:sid`
+
+Agrega un servicio existente a una reserva existente. Valida que tanto la reserva como el servicio existan. Si el servicio ya estaba asociado a la reserva, incrementa su `quantity` en vez de duplicar la entrada.
+
+```http
+POST /api/bookings/1/services/3
+```
+
+- **201** si se asocia correctamente: `{ "status": "success", "payload": { ... /* reserva actualizada */ } }`
+- **404** si la reserva o el servicio no existen: `{ "status": "error", "message": "Reserva no encontrada" }` o `{ "status": "error", "message": "Servicio no encontrado" }`
+
 ## Cómo probar la API
 
-Se puede probar con cualquier cliente HTTP: [Postman](https://www.postman.com/), [Thunder Client](https://www.thunderclient.com/) (extensión de VS Code) o la extensión [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client), usada durante el desarrollo de este proyecto.
+Se puede probar con cualquier cliente HTTP: [Postman](https://www.postman.com/), [Thunder Client](https://www.thunderclient.com/) (extensión de VS Code) o la extensión [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client), usada durante el desarrollo de este proyecto Los archivos de prueba usados se 
+encuentran en `src/test/`.
 
 Ejemplo de archivo `.http` para REST Client:
 ```http
-### Para mostrar todos los servicios
-GET http://localhost:8081/api/services
+### obtener una reserva por su id
+GET http://localhost:8081/api/bookings/6
 
-### Para mostrar un servicio por su id
-GET http://localhost:8081/api/services/5
+### Buscamos una reserva que no exista
+GET http://localhost:8081/api/bookings/90
 
-### Para crear un nuevo servicio
-POST http://localhost:8081/api/services
-Content-Type: application/json
-
-{
-    "name": "Programador JR",
-    "description" : "Realiza pequeñas correcciones y debuguea" ,
-    "duration" : "4 horas" ,
-    "price" : 100,
-    "category" : "IT",
-    "available" :  true
-}
-### Para crear un nuevo servicio con campos faltantes
-POST http://localhost:8081/api/services
-Content-Type: application/json
+### crear una nueva reserva
+POST http://localhost:8081/api/bookings
+Content-Type: application/json;
 
 {
-    "name": "Programador SSR",
-    "duration" : "8 horas" ,
-    "price" : 200,
-    "category" : "IT",
-    "available" :  true
+    "clientName": "Lionel Messi",
+    "clientEmail": "leomessi10@gmail.com",
+    "date": "06-24-1987",
+    "time": "00:00:06",
+    "status": "Confirmada",
+    "services": []
 }
-
-### Actualizar un servicio
-PUT http://localhost:8081/api/services/7
-Content-Type: application/json
-
-{
-  "price": 999
-}
-
-### Actualizar un servicio con id inexistente
-PUT http://localhost:8081/api/services/8345
-Content-Type: "application/json"
-
-{
-    "price" : 150
-}
-
-### Eliminar un servicio
-DELETE http://localhost:8081/api/services/1
-
-### Eliminar un servicio con id inexistente
-DELETE http://localhost:8081/api/services/13434
 ```
 
 ## Tecnologías utilizadas

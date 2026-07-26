@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "clientName": "Juan Pérez",
+    "clientEmail": "juanperez@gmail.com",
+    "date": "01-01-2026",
+    "time": "00:00:01",
+    "status": "Confirmada",
+    "services": [
+      {
+        "service": 1,
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "clientName": "Oscar Gómez",
+    "clientEmail": "oscargomez@gmail.com",
+    "date": "07-24-2026",
+    "time": "00:00:02",
+    "status": "Confirmada",
+    "services": [
+      {
+        "service": 2,
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "clientName": "Raúl López",
+    "clientEmail": "raullopez@gmail.com",
+    "date": "02-28-2026",
+    "time": "00:00:03",
+    "status": "Confirmada",
+    "serviesc": [
+      {
+        "service": 3,
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "clientName": "Homero Sanchéz",
+    "clientEmail": "homeroanchez@gmail.com",
+    "date": "03-20-1970",
+    "time": "00:00:04",
+    "status": "Confirmada",
+    "services": [
+      {
+        "service": 4,
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "clientName": "Cosme Fulanito",
+    "clientEmail": "cosmefulanito@gmail.com",
+    "date": "12-31-2025",
+    "time": "00:00:05",
+    "status": "Confirmada",
+    "services": [
+      {
+        "service": 5,
+        "quantity": 1
+      }
+    ]
+  }
+]
