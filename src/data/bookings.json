@@ -34,7 +34,7 @@
     "date": "02-28-2026",
     "time": "00:00:03",
     "status": "Confirmada",
-    "serviesc": [
+    "services": [
       {
         "service": 3,
         "quantity": 1

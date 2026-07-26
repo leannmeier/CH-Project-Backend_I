@@ -8,11 +8,25 @@ GET http://localhost:8081/api/bookings/90
 POST http://localhost:8081/api/bookings
 Content-Type: application/json;
 
-{
+{   
     "clientName": "Lionel Messi",
     "clientEmail": "leomessi10@gmail.com",
     "date": "06-24-1987",
     "time": "00:00:06",
+    "status": "Confirmada",
+    "services": []
+}
+
+### crear una nueva reserva (Sin importar si viene con un id)
+POST http://localhost:8081/api/bookings
+Content-Type: application/json;
+
+{   
+    "id": 323424,
+    "clientName": "Pedro Pérez",
+    "clientEmail": "pedroperez@gmail.com",
+    "date": "01-01-2000",
+    "time": "00:00:10",
     "status": "Confirmada",
     "services": []
 }

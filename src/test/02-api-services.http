@@ -38,7 +38,7 @@ Content-Type: application/json
 
 ### Actualizar un servicio con id inexistente
 PUT http://localhost:8081/api/services/8345
-Content-Type: "application/json"
+Content-Type: application/json
 
 {
     "price" : 150

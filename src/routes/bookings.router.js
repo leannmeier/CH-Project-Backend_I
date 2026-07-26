@@ -24,13 +24,17 @@ router.get('/:bid', async (req, res) => {
 });
 
 router.post('/:bid/services/:sid', async (req, res) => {
-    const { bid, sid } = req.params;
-
-    const booking = await manager.addServiceToBooking(bid, sid);
-    if (booking?.error) {
-        return res.status(404).json({ status: 'error', message: booking.error });
+    try{
+        const { bid, sid } = req.params;
+        const booking = await manager.addServiceToBooking(bid, sid);
+        if(booking?.error){
+            return res.status(404).json({ status: 'error', message: booking.error });
+        }
+        res.status(201).json({ status: 'success', payload: booking });
     }
-    res.status(201).json({ status: 'success', payload: booking });
+    catch(error){
+        return res.status(500).json({ status: 'error', message: 'Error interno del servidor' });
+    }
 });
 
 export default router;

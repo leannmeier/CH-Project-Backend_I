@@ -49,16 +49,18 @@ export class BookingManager {
         if ( camposFaltantes.length > 0) {
             return { error: `Faltan campos obligatorios: ${camposFaltantes.join(', ')}` };
         }
+
+        const { id: _idIgnorado, ...datosLimpios } = bookingData;
         const nuevaReserva = {
+            ...datosLimpios,
             id: newId(bookings),
-            ...bookingData,
             services: bookingData.services ?? []
         }
+
         bookings.push(nuevaReserva);
         await this.#saveBookings(bookings);
         console.log('Nueva reserva creada');
         return nuevaReserva;
-
     }
 
     async getBookingById(id){
@@ -73,7 +75,9 @@ export class BookingManager {
         if (!booking) {
             return { error: 'Reserva no encontrada' };
         }
-
+        if(!Array.isArray(booking.services)){
+            booking.services = [];
+        }
         const service = await this.#serviceManager.getServiceById(sid);
         if (!service) {
             return { error: 'Servicio no encontrado' };

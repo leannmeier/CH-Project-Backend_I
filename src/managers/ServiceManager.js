@@ -44,7 +44,11 @@ export class ServiceManager{
             return valor === undefined || valor === null || valor === '';
         });
         if (faltantes.length == 0){
-            nuevoServicio = {id: newId(services), ...serviceData}
+            const { id: _idIgnorado, ...datosLimpios } = serviceData;
+            nuevoServicio = {
+                ...serviceData,
+                id: newId(services)
+            }
             services.push(nuevoServicio);
             await this.#saveServices(services);
             console.log('Nuevo servicio agregado');

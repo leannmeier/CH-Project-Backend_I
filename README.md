@@ -84,8 +84,6 @@ backend-turnos-reservas/
 │   │   ├── 01-test-services-manager.js
 │   │   ├── 02-api-services.http
 │   │   └── 03-api-bookings.http
-|   |   └── 01-test-services-manager.js
-|   |   └── 02-api.http
 │   └── utils/
 │       ├── findById.js
 │       └── newId.js
