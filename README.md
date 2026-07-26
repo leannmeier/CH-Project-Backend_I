@@ -81,14 +81,11 @@ backend-turnos-reservas/
 │   │   ├── bookings.router.js
 |   |   └── services.router.js
 │   ├── test/
-<<<<<<< HEAD
 │   │   ├── 01-test-services-manager.js
 │   │   ├── 02-api-services.http
 │   │   └── 03-api-bookings.http
-=======
 |   |   └── 01-test-services-manager.js
 |   |   └── 02-api.http
->>>>>>> 97e7b5fe8ef53399108c0a5bdc5a3dbc478d8dba
 │   └── utils/
 │       ├── findById.js
 │       └── newId.js
