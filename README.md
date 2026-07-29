@@ -7,7 +7,7 @@ Sistema backend para la gestión de servicios, turnos y reservas, desarrollado c
 - [x] Módulo 1: Configuración base, ESM, dotenv, ServiceManager (JSON)
 - [x] Módulo 2: Servidor con Express y API REST
 - [x] Módulo 3: Persistencia con FileSystem
-- [ ] Módulo 4: Routers y Controllers
+- [x] Módulo 4: Routers y Controllers
 - [ ] Módulo 5: Arquitectura en Capas: DAO y Repository
 - [ ] Módulo 6: MongoDB Atlas y Mongoose
 - [ ] Módulo 7: Vistas con Handlebars y WebSockets
@@ -19,7 +19,7 @@ Sistema backend para la gestión de servicios, turnos y reservas, desarrollado c
 - Configuración base del proyecto con Node.js y ESM
 - Gestión segura de variables de entorno con `dotenv` y validación fail-fast
 - Servidor Express con API REST para los recursos `services` y `bookings`
-- Routers propios (`services.router.js`, `bookings.router.js`) con `express.Router()`, separados de `app.js`
+- Arquitectura en tres capas: routes → controllers → managers, con responsabilidades separadas
 - `ServiceManager`: CRUD completo de servicios, con filtros por query params y validación de datos
 - `BookingManager`: creación y consulta de reservas, y asociación de servicios existentes a una reserva
 - Persistencia asíncrona en archivos JSON con `fs.promises` (`async`/`await`), sin bloquear el Event Loop
@@ -62,6 +62,30 @@ npm run dev     # ejecuta el proyecto con reinicio automático ante cambios (nod
 ```
 El servidor queda disponible en `http://localhost:<PORT>` (por defecto, `http://localhost:8081`).
 
+## Arquitectura del proyecto
+
+La API está organizada en tres capas, cada una con una única responsabilidad:
+
+```
+Cliente → Router → Controller → Manager → Archivo JSON
+```
+
+- **routes/**: define únicamente los endpoints disponibles y los conecta con su controller correspondiente. No contiene lógica de negocio ni acceso a datos.
+- **controllers/**: recibe la petición (`req.params`, `req.query`, `req.body`), llama al manager correspondiente y devuelve la respuesta (`res.status().json()`). No accede directamente a los archivos JSON.
+- **managers/**: contiene la lógica de acceso y validación de datos, trabajando con los archivos JSON mediante `fs.promises`. No utiliza `req` ni `res` en ningún momento, lo que le permite funcionar de forma independiente de la capa HTTP.
+
+Ejemplo de flujo, creación de un servicio:
+
+```
+POST /api/services → services.router.js → createService (controller) → ServiceManager.addService() → services.json
+```
+
+Ejemplo de flujo con validación cruzada entre managers:
+
+```
+POST /api/bookings/:bid/services/:sid → bookings.router.js → addServiceToBooking (controller) → BookingManager.addServiceToBooking() → valida el servicio vía ServiceManager → bookings.json
+```
+
 ## Estructura del proyecto
 
 ```
@@ -71,6 +95,9 @@ backend-turnos-reservas/
 │   ├── server.js
 │   ├── config/
 │   │   └── env.config.js
+│   ├── controllers/
+│   │   ├── services.controller.js
+│   │   └── bookings.controller.js
 │   ├── data/
 │   │   ├── bookings.json
 │   │   └── services.json
@@ -272,28 +299,6 @@ Este mecanismo es independiente de los errores de validación de negocio (por ej
 
 Se puede probar con cualquier cliente HTTP: [Postman](https://www.postman.com/), [Thunder Client](https://www.thunderclient.com/) (extensión de VS Code) o la extensión [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client), usada durante el desarrollo de este proyecto Los archivos de prueba usados se 
 encuentran en `src/test/`.
-
-Ejemplo de archivo `.http` para REST Client:
-```http
-### obtener una reserva por su id
-GET http://localhost:8081/api/bookings/6
-
-### Buscamos una reserva que no exista
-GET http://localhost:8081/api/bookings/90
-
-### crear una nueva reserva
-POST http://localhost:8081/api/bookings
-Content-Type: application/json;
-
-{
-    "clientName": "Lionel Messi",
-    "clientEmail": "leomessi10@gmail.com",
-    "date": "06-24-1987",
-    "time": "00:00:06",
-    "status": "Confirmada",
-    "services": []
-}
-```
 
 ## Tecnologías utilizadas
 
