@@ -1,18 +1,19 @@
 import { Router } from 'express';
 import { BookingManager } from '../managers/BookingManager.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = Router();
 const manager = new BookingManager();
 
-router.post('/', async (req, res) => {
+router.post('/', asyncHandler(async (req, res) => {
     const resultado = await manager.createBooking(req.body);
     if(resultado?.error){
         return res.status(400).json({ status: 'error', message: resultado.error });
     }
-    res.status(201).json( { status: 'success', payload: resultado } )
-});
+    res.status(201).json( { status: 'success', payload: resultado } );
+}));
 
-router.get('/:bid', async (req, res) => {
+router.get('/:bid', asyncHandler(async (req, res) => {
     const { bid } = req.params;
     const booking = await manager.getBookingById(bid);
     if(booking){
@@ -21,20 +22,15 @@ router.get('/:bid', async (req, res) => {
     else{
         res.status(404).json({ status: 'error', message : 'Reserva no encontrada' });
     }
-});
+}));
 
-router.post('/:bid/services/:sid', async (req, res) => {
-    try{
-        const { bid, sid } = req.params;
-        const booking = await manager.addServiceToBooking(bid, sid);
-        if(booking?.error){
-            return res.status(404).json({ status: 'error', message: booking.error });
-        }
-        res.status(201).json({ status: 'success', payload: booking });
+router.post('/:bid/services/:sid', asyncHandler(async (req, res) => {
+    const { bid, sid } = req.params;
+    const booking = await manager.addServiceToBooking(bid, sid);
+    if(booking?.error){
+        return res.status(404).json({ status: 'error', message: booking.error });
     }
-    catch(error){
-        return res.status(500).json({ status: 'error', message: 'Error interno del servidor' });
-    }
-});
+    res.status(201).json({ status: 'success', payload: booking });
+}));
 
 export default router;

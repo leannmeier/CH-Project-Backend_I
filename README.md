@@ -23,7 +23,7 @@ Sistema backend para la gestión de servicios, turnos y reservas, desarrollado c
 - `ServiceManager`: CRUD completo de servicios, con filtros por query params y validación de datos
 - `BookingManager`: creación y consulta de reservas, y asociación de servicios existentes a una reserva
 - Persistencia asíncrona en archivos JSON con `fs.promises` (`async`/`await`), sin bloquear el Event Loop
-- Manejo de errores centralizado en los métodos privados de lectura/escritura de cada manager
+- Manejo de errores en dos niveles: try/catch en los métodos privados de lectura/escritura de cada manager, y middleware de manejo de errores centralizado en Express para las rutas, evitando exponer detalles internos al cliente
 
 En próximos módulos se incorporarán arquitectura en capas (DAO/Repository), MongoDB con Mongoose, vistas con Handlebars, WebSockets y validaciones avanzadas.
 
@@ -77,6 +77,8 @@ backend-turnos-reservas/
 │   ├── managers/
 │   │   ├── BookingManager.js
 │   │   └── ServiceManager.js
+│   ├── middlewares/
+│   │   └── errorHandler.js
 │   ├── routes/
 │   │   ├── bookings.router.js
 |   |   └── services.router.js
@@ -85,6 +87,7 @@ backend-turnos-reservas/
 │   │   ├── 02-api-services.http
 │   │   └── 03-api-bookings.http
 │   └── utils/
+│       ├── asyncHandler.js
 │       ├── findById.js
 │       └── newId.js
 |
@@ -252,6 +255,18 @@ POST /api/bookings/1/services/3
 
 - **201** si se asocia correctamente: `{ "status": "success", "payload": { ... /* reserva actualizada */ } }`
 - **404** si la reserva o el servicio no existen: `{ "status": "error", "message": "Reserva no encontrada" }` o `{ "status": "error", "message": "Servicio no encontrado" }`
+
+## Manejo de errores
+
+Las rutas están envueltas con un wrapper (`src/utils/asyncHandler.js`) que captura cualquier error no controlado dentro de un handler asíncrono y lo redirige al middleware de errores de Express, sin necesidad de repetir `try/catch` en cada ruta.
+
+El middleware `src/middlewares/errorHandler.js` intercepta esos errores, los registra en consola para depuración, y responde al cliente con un mensaje genérico, evitando exponer detalles internos del servidor (como stack traces):
+
+```json
+{ "status": "error", "message": "Error interno del servidor" }
+```
+
+Este mecanismo es independiente de los errores de validación de negocio (por ejemplo, campos faltantes o recurso no encontrado), que se manejan explícitamente en cada manager y se comunican con los códigos de estado correspondientes (400, 404).
 
 ## Cómo probar la API
 
