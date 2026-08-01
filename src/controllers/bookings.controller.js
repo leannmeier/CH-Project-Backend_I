@@ -1,10 +1,9 @@
-import { BookingManager } from '../managers/BookingManager.js';
+import * as bookingsService from '../service/bookings.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
-const manager = new BookingManager();
 
 export const createBooking = asyncHandler(async (req, res) => {
-    const resultado = await manager.createBooking(req.body);
+    const resultado = await bookingsService.createBooking(req.body);
     if(resultado?.error){
         return res.status(400).json({ status: 'error', message: resultado.error });
     }
@@ -13,7 +12,7 @@ export const createBooking = asyncHandler(async (req, res) => {
 
 export const getBookingById = asyncHandler(async (req, res) => {
     const { bid } = req.params;
-    const booking = await manager.getBookingById(bid);
+    const booking = await bookingsService.getBookingById(bid);
     if(booking){
         res.status(200).json( { status: 'success', payload: booking } );
     }
@@ -24,7 +23,7 @@ export const getBookingById = asyncHandler(async (req, res) => {
 
 export const addServiceToBooking = asyncHandler(async (req, res) => {
     const { bid, sid } = req.params;
-    const booking = await manager.addServiceToBooking(bid, sid);
+    const booking = await bookingsService.addServiceToBooking(bid,sid);
     if(booking?.error){
         return res.status(404).json({ status: 'error', message: booking.error });
     }

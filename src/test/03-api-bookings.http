@@ -1,10 +1,10 @@
 ### obtener una reserva por su id
-GET http://localhost:8081/api/bookings/5
+GET http://localhost:8081/api/bookings/4
 
 ### Buscamos una reserva que no exista
 GET http://localhost:8081/api/bookings/90
 
-### crear una nueva reserva
+### crear una nueva reserva -> Code 201
 POST http://localhost:8081/api/bookings
 Content-Type: application/json;
 
@@ -17,7 +17,7 @@ Content-Type: application/json;
     "services": []
 }
 
-### crear una nueva reserva (Sin importar si viene con un id)
+### crear una nueva reserva (Sin importar si viene con un id en el cuerpo) -> Code 201
 POST http://localhost:8081/api/bookings
 Content-Type: application/json;
 
@@ -31,7 +31,7 @@ Content-Type: application/json;
     "services": []
 }
 
-### crear una nueva reserva con campos faltantes
+### crear una nueva reserva con campos faltantes -> Code 400
 POST http://localhost:8081/api/bookings
 Content-Type: application/json;
 
@@ -42,46 +42,23 @@ Content-Type: application/json;
     "services": []
 }
 
-### agrego un servicio a una reserva. todo valido (bid=1, sid=2) (todo nuevo. repetimos la misma peticion y deberia incrementar en 1 quantity de service con id=2)
-POST http://localhost:8081/api/bookings/1/services/2
-Content-Type: application/json;
+### Agrego un servicio a una reserva. todo valido (bid=1, sid=1) 
+POST http://localhost:8081/api/bookings/1/services/1
+### primer intento. Deberia incrementar quantity en 2
+### segundo intento. quantity en 3
 
-[
-    {
-        "service": 1,
-        "quantity": 1
-    }
-]
+POST http://localhost:8081/api/bookings/4/services/2
+### primer intento. Deberia aparecer el servicio con sid=2 en la reserva con bid=4
+### segundo intento. service: 2 quantity: 2. En bid=4
 
-### agrego un servicio a una reserva. con campos inexistentes (reserva valida con servicio invalido)
-POST http://localhost:8081/api/bookings/1/services/2324234
-Content-Type: application/json;
+### Con un sid que no existe 
+POST http://localhost:8081/api/bookings/1/services/2343
 
-[
-    {
-        "service": 1,
-        "quantity": 1
-    }
-]
+### Con un bid que no existe 
+POST http://localhost:8081/api/bookings/1231/services/2343
 
-### agrego un servicio a una reserva. con campos inexistentes (reserva invalida con servicio valido)
-POST http://localhost:8081/api/bookings/1213123/services/3
-Content-Type: application/json;
+### Con ambos bid y sid inexistentes
+POST http://localhost:8081/api/bookings/2131231/services/2343
 
-[
-    {
-        "service": 1,
-        "quantity": 1
-    }
-]
 
-### agrego un servicio a una reserva. con campos inexistentes (ambos ids invalidos)
-POST http://localhost:8081/api/bookings/1213123/services/323
-Content-Type: application/json;
 
-[
-    {
-        "service": 1,
-        "quantity": 1
-    }
-]

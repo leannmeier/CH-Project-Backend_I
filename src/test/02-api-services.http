@@ -2,7 +2,7 @@
 GET http://localhost:8081/api/services
 
 ### Para mostrar un servicio por su id
-GET http://localhost:8081/api/services/5
+GET http://localhost:8081/api/services/7
 
 ### Para crear un nuevo servicio
 POST http://localhost:8081/api/services
@@ -33,7 +33,7 @@ PUT http://localhost:8081/api/services/7
 Content-Type: application/json
 
 {
-  "price": 999
+  "price": 998
 }
 
 ### Actualizar un servicio con id inexistente

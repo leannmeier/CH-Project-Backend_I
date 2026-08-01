@@ -6,9 +6,9 @@ Sistema backend para la gestión de servicios, turnos y reservas, desarrollado c
 
 - [x] Módulo 1: Configuración base, ESM, dotenv, ServiceManager (JSON)
 - [x] Módulo 2: Servidor con Express y API REST
-- [x] Módulo 3: Persistencia con FileSystem
-- [x] Módulo 4: Routers y Controllers
-- [ ] Módulo 5: Arquitectura en Capas: DAO y Repository
+- [x] Módulo 3: Persistencia asíncrona con FileSystem, recurso Bookings
+- [x] Módulo 4: Organización en routes, controllers y managers
+- [x] Módulo 5: Arquitectura en capas (services, repositories, DAO)
 - [ ] Módulo 6: MongoDB Atlas y Mongoose
 - [ ] Módulo 7: Vistas con Handlebars y WebSockets
 - [ ] Módulo 8: Consultas Avanzadas, Validación y Populate
@@ -19,13 +19,12 @@ Sistema backend para la gestión de servicios, turnos y reservas, desarrollado c
 - Configuración base del proyecto con Node.js y ESM
 - Gestión segura de variables de entorno con `dotenv` y validación fail-fast
 - Servidor Express con API REST para los recursos `services` y `bookings`
-- Arquitectura en tres capas: routes → controllers → managers, con responsabilidades separadas
-- `ServiceManager`: CRUD completo de servicios, con filtros por query params y validación de datos
-- `BookingManager`: creación y consulta de reservas, y asociación de servicios existentes a una reserva
-- Persistencia asíncrona en archivos JSON con `fs.promises` (`async`/`await`), sin bloquear el Event Loop
-- Manejo de errores en dos niveles: try/catch en los métodos privados de lectura/escritura de cada manager, y middleware de manejo de errores centralizado en Express para las rutas, evitando exponer detalles internos al cliente
+- Arquitectura en capas: routes → controllers → services → repositories → DAO, con responsabilidades separadas
+- Lógica de negocio (validaciones, generación de ids, regla de `quantity` incremental) desacoplada del acceso a datos
+- Persistencia asíncrona en archivos JSON con `fs.promises` (`async`/`await`), encapsulada por completo en la capa DAO
+- Manejo de errores en dos niveles: try/catch en el DAO, y middleware de manejo de errores centralizado en Express para las rutas, evitando exponer detalles internos al cliente
 
-En próximos módulos se incorporarán arquitectura en capas (DAO/Repository), MongoDB con Mongoose, vistas con Handlebars, WebSockets y validaciones avanzadas.
+En próximos módulos se incorporará MongoDB con Mongoose (reemplazando la implementación de DAO basada en FileSystem), vistas con Handlebars, WebSockets y validaciones avanzadas.
 
 ## Instalación
 
@@ -64,27 +63,48 @@ El servidor queda disponible en `http://localhost:<PORT>` (por defecto, `http://
 
 ## Arquitectura del proyecto
 
-La API está organizada en tres capas, cada una con una única responsabilidad:
+La API está organizada en capas, cada una con una única responsabilidad:
 
 ```
-Cliente → Router → Controller → Manager → Archivo JSON
+Cliente → Router → Controller → Service → Repository → DAO → Archivo JSON
 ```
 
-- **routes/**: define únicamente los endpoints disponibles y los conecta con su controller correspondiente. No contiene lógica de negocio ni acceso a datos.
-- **controllers/**: recibe la petición (`req.params`, `req.query`, `req.body`), llama al manager correspondiente y devuelve la respuesta (`res.status().json()`). No accede directamente a los archivos JSON.
-- **managers/**: contiene la lógica de acceso y validación de datos, trabajando con los archivos JSON mediante `fs.promises`. No utiliza `req` ni `res` en ningún momento, lo que le permite funcionar de forma independiente de la capa HTTP.
+| Capa | Responsabilidad |
+|---|---|
+| **routes/** | Define los endpoints disponibles y los conecta con su controller. No contiene lógica propia. |
+| **controllers/** | Recibe la petición (`req.params`, `req.query`, `req.body`), llama al service correspondiente y responde al cliente (`res.status().json()`). No accede a la persistencia ni conoce reglas de negocio. |
+| **services/** | Contiene la lógica de negocio: validación de campos obligatorios, protección del id autogenerado, y la regla de incrementar `quantity` cuando un servicio ya está asociado a una reserva. No conoce `req`/`res`, ni sabe cómo ni dónde se almacenan los datos. |
+| **repositories/** | Ofrece métodos genéricos de acceso a datos (`getAll`, `getById`, `create`, `update`, `delete`) para que la capa service no necesite saber si los datos vienen de un archivo JSON o de una base de datos. |
+| **dao/** | Lee y escribe directamente en los archivos JSON. Es la única capa que conoce la ruta de los archivos de datos. Sin lógica de negocio: solo validaciones técnicas necesarias para la operación (por ejemplo, confirmar que un registro existe antes de actualizarlo). |
 
-Ejemplo de flujo, creación de un servicio:
+Cada recurso (`services`, `bookings`) tiene su propio conjunto de archivos en cada capa, siguiendo la convención `<recurso>.<capa>.js` (por ejemplo, `services.service.js`, `services.repository.js`).
+
+### Ejemplo de flujo: crear un servicio
 
 ```
-POST /api/services → services.router.js → createService (controller) → ServiceManager.addService() → services.json
+POST /api/services
+  → services.router.js
+  → addService (controller)
+  → services.service.js → createService()  (valida campos obligatorios)
+  → services.repository.js → create()      (genera el id)
+  → services.fs.dao.js → create()          (escribe en services.json)
 ```
 
-Ejemplo de flujo con validación cruzada entre managers:
+### Ejemplo de flujo con dependencia entre recursos: agregar un servicio a una reserva
 
 ```
-POST /api/bookings/:bid/services/:sid → bookings.router.js → addServiceToBooking (controller) → BookingManager.addServiceToBooking() → valida el servicio vía ServiceManager → bookings.json
+POST /api/bookings/:bid/services/:sid
+  → bookings.router.js
+  → addServiceToBooking (controller)
+  → bookings.service.js → addServiceToBooking()
+      (valida que la reserva exista, consulta services.service.js
+       para validar que el servicio exista, aplica la regla de
+       quantity incremental)
+  → bookings.repository.js → update()
+  → bookings.fs.dao.js → update()          (escribe en bookings.json)
 ```
+
+La comunicación entre los recursos `bookings` y `services` ocurre siempre a nivel de la capa service (`bookings.service.js` llama a `services.service.js`), nunca saltando directamente a un repository o DAO de otro recurso.
 
 ## Estructura del proyecto
 
@@ -98,21 +118,28 @@ backend-turnos-reservas/
 │   ├── controllers/
 │   │   ├── services.controller.js
 │   │   └── bookings.controller.js
+│   ├── dao/
+│   │   └── fileSystem/
+│   │       ├── services.fs.dao.js
+│   │       └── bookings.fs.dao.js
 │   ├── data/
 │   │   ├── bookings.json
 │   │   └── services.json
-│   ├── managers/
-│   │   ├── BookingManager.js
-│   │   └── ServiceManager.js
 │   ├── middlewares/
 │   │   └── errorHandler.js
+│   ├── repositories/
+│   │   ├── services.repository.js
+│   │   └── bookings.repository.js
 │   ├── routes/
 │   │   ├── bookings.router.js
 |   |   └── services.router.js
+│   ├── services/
+│   │   ├── services.service.js
+│   │   └── bookings.service.js
 │   ├── test/
 │   │   ├── 01-test-services-manager.js
 │   │   ├── 02-api-services.http
-│   │   └── 03-api-bookings.http
+│   │   └── 03-api-bookings.http // adaptado
 │   └── utils/
 │       ├── asyncHandler.js
 │       ├── findById.js
@@ -274,7 +301,7 @@ Devuelve una reserva según su `id`.
 
 #### `POST /api/bookings/:bid/services/:sid`
 
-Agrega un servicio existente a una reserva existente. Valida que tanto la reserva como el servicio existan. Si el servicio ya estaba asociado a la reserva, incrementa su `quantity` en vez de duplicar la entrada.
+Agrega un servicio existente a una reserva existente. No requiere body: el servicio a agregar se identifica exclusivamente por el parámetro `:sid` de la URL. Valida que tanto la reserva como el servicio existan. Si el servicio ya estaba asociado a la reserva, incrementa su `quantity` en vez de duplicar la entrada.ada.
 
 ```http
 POST /api/bookings/1/services/3
@@ -285,7 +312,7 @@ POST /api/bookings/1/services/3
 
 ## Manejo de errores
 
-Las rutas están envueltas con un wrapper (`src/utils/asyncHandler.js`) que captura cualquier error no controlado dentro de un handler asíncrono y lo redirige al middleware de errores de Express, sin necesidad de repetir `try/catch` en cada ruta.
+Las rutas están envueltas con un wrapper (`src/utils/asyncHandler.js`) que captura cualquier error no controlado dentro de un handler asíncrono y lo redirige al middleware de errores de Express, sin necesidad de repetir `try/catch` en cada controller.
 
 El middleware `src/middlewares/errorHandler.js` intercepta esos errores, los registra en consola para depuración, y responde al cliente con un mensaje genérico, evitando exponer detalles internos del servidor (como stack traces):
 
@@ -294,6 +321,10 @@ El middleware `src/middlewares/errorHandler.js` intercepta esos errores, los reg
 ```
 
 Este mecanismo es independiente de los errores de validación de negocio (por ejemplo, campos faltantes o recurso no encontrado), que se manejan explícitamente en cada manager y se comunican con los códigos de estado correspondientes (400, 404).
+
+## Limitaciones conocidas
+
+La persistencia actual con archivos JSON no garantiza atomicidad ante escrituras concurrentes: si varias peticiones modifican el mismo recurso de forma simultánea (por ejemplo, múltiples llamados a `POST /api/bookings/:bid/services/:sid` en paralelo), es posible que alguna actualización se pierda (*lost update*). Esta limitación es inherente a FileSystem como mecanismo de persistencia y se resolverá con la migración a MongoDB.
 
 ## Cómo probar la API
 
