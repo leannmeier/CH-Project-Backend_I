@@ -56,7 +56,7 @@ export async function update(id, service){
         const serviciosActualizados = services.map( s => s.id === Number(id) ? service : s);
         await guardar(serviciosActualizados);
     }
-    return buscarServicio;
+    return service;
 }
 
 export async function _delete(id){

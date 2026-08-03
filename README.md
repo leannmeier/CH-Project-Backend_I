@@ -1,6 +1,6 @@
 # Backend Turnos y Reservas
 
-Sistema backend para la gestión de servicios, turnos y reservas, desarrollado con Node.js utilizando módulos ESM (ECMAScript Modules). Este proyecto se construye de forma incremental a lo largo del curso de Desarrollo Backend, comenzando con un administrador de servicios persistido en archivos JSON.
+Sistema backend para la gestión de servicios, turnos y reservas, desarrollado con Node.js utilizando módulos ESM (ECMAScript Modules). Este proyecto se construye de forma incremental a lo largo del curso de Desarrollo Backend, comenzando con una persistencia basada en archivos JSON.
 
 ## Estado del proyecto
 
@@ -137,9 +137,8 @@ backend-turnos-reservas/
 │   │   ├── services.service.js
 │   │   └── bookings.service.js
 │   ├── test/
-│   │   ├── 01-test-services-manager.js
 │   │   ├── 02-api-services.http
-│   │   └── 03-api-bookings.http // adaptado
+│   │   ├── 03-api-bookings.http
 │   └── utils/
 │       ├── asyncHandler.js
 │       ├── findById.js
@@ -213,7 +212,7 @@ Una reserva representa un turno solicitado por un cliente, con uno o más servic
 
 Cada entrada de `services` tiene la forma `{ service: idDelServicio, quantity: number }`. Si un servicio ya está asociado a la reserva y se vuelve a agregar, se incrementa `quantity` en vez de crear una entrada duplicada.
 
-La persistencia de las reservas se realiza en `src/data/bookings.json`. La validación de que un servicio exista al asociarlo a una reserva se delega en `ServiceManager`, evitando duplicar la lógica de acceso a `services.json`.
+La persistencia de las reservas se realiza en `src/data/bookings.json`. La validación de la existencia del servicio se realiza mediante la capa `services.service.js`, manteniendo la comunicación entre recursos a nivel de la capa service y evitando acceder directamente a la persistencia.
 
 
 ## Endpoints de la API
@@ -320,7 +319,7 @@ El middleware `src/middlewares/errorHandler.js` intercepta esos errores, los reg
 { "status": "error", "message": "Error interno del servidor" }
 ```
 
-Este mecanismo es independiente de los errores de validación de negocio (por ejemplo, campos faltantes o recurso no encontrado), que se manejan explícitamente en cada manager y se comunican con los códigos de estado correspondientes (400, 404).
+Este mecanismo es independiente de los errores de validación de negocio (por ejemplo, campos faltantes o recurso no encontrado), que se manejan explícitamente en la capa de servicios y se comunican con los códigos de estado correspondientes (400, 404).
 
 ## Limitaciones conocidas
 

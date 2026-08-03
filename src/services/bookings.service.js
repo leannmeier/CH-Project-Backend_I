@@ -1,5 +1,5 @@
 import * as bookingsRepository from '../repositories/bookings.repository.js';
-import * as servicesService from '../service/services.service.js';
+import * as servicesService from '../services/services.service.js';
 
 const camposRequeridos = ['clientName', 'clientEmail', 'date', 'time', 'status'];
 

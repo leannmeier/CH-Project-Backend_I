@@ -55,5 +55,5 @@ export async function update(id, updateBooking){
         const reservasActualizadas = bookings.map( b => b.id === Number(id) ? updateBooking : b );
         await guardar(reservasActualizadas);
     }
-    return actualizarReserva;
+    return updateBooking;
 }

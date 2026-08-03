@@ -24,7 +24,6 @@ export async function update(id, updateData){
     if(!servicioExistente){  
         return null
     }
-    const { id: _idIgnorado, ...datosLimpios } = updateData;
     const actualizarServicio = { ...servicioExistente, ...updateData, id: servicioExistente.id}
     return await servicesDao.update(id, actualizarServicio);
 }

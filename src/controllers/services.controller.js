@@ -1,4 +1,4 @@
-import * as servicesService from '../service/services.service.js'
+import * as servicesService from '../services/services.service.js'
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const getServices = asyncHandler(async (req, res) => {

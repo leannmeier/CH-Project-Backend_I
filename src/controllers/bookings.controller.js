@@ -1,4 +1,4 @@
-import * as bookingsService from '../service/bookings.service.js';
+import * as bookingsService from '../services/bookings.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 
