@@ -1,0 +1,121 @@
+### Fusión del archivo '02-api-services.http' y el archivo '03-api-bookings.http'
+### 02
+### Para mostrar todos los servicios
+GET http://localhost:8081/api/services
+
+### Para mostrar un servicio por su id
+GET http://localhost:8081/api/services/6a713ca8f480932c18771a07
+
+### Intentamos mostrar un servicio con id inexistente
+GET http://localhost:8081/api/services/6a713ca8f480932c18770000
+
+### Intentamos mostrar un servicio con id que no cumple con el formato
+GET http://localhost:8081/api/services/6
+
+### Para crear un nuevo servicio
+POST http://localhost:8081/api/services
+Content-Type: application/json
+
+{
+    "name": "Programador JR",
+    "description" : "Realiza pequeñas correcciones y debuguea" ,
+    "duration" : "4 horas" ,
+    "price" : 100,
+    "category" : "IT",
+    "available" :  true
+}
+### Para crear un nuevo servicio con campos faltantes
+POST http://localhost:8081/api/services
+Content-Type: application/json
+
+{
+    "name": "Programador SSR",
+    "duration" : "8 horas" ,
+    "price" : 200,
+    "category" : "IT",
+    "available" :  true
+}
+
+### Actualizar un servicio
+PUT http://localhost:8081/api/services/6a731d8f5be8c2b315593cfe
+Content-Type: application/json
+
+{
+  "price": 998
+}
+
+### Actualizar un servicio con id inexistente
+PUT http://localhost:8081/api/services/6a7311f074b2b10fcb4fc000
+Content-Type: application/json
+
+{
+    "price" : 150
+}
+
+### Eliminar un servicio
+DELETE http://localhost:8081/api/services/6a731d8f5be8c2b315593cfe
+
+### Eliminar un servicio con id inexistente
+DELETE http://localhost:8081/api/services/6a7311f074b2b10fcb4fc000
+
+### ----------------------------------------------------------------------------------------------------------------------
+### 03
+### Obtener una reserva por su id
+GET http://localhost:8081/api/bookings/6a7359b65c8734f64ff4d6d7
+
+### Buscamos una reserva que no exista
+GET http://localhost:8081/api/bookings/6a713cfbf480932c18770000
+
+### crear una nueva reserva -> Code 201
+POST http://localhost:8081/api/bookings
+Content-Type: application/json;
+
+{   
+    "clientName": "Lionel Messi",
+    "clientEmail": "leomessi10@gmail.com",
+    "date": "06-24-1987",
+    "time": "00:00:06",
+    "status": true,
+    "services": []
+}
+
+### crear una nueva reserva (Sin importar si viene con un id en el cuerpo) -> Code 201 
+POST http://localhost:8081/api/bookings
+Content-Type: application/json;
+
+{   
+    "_id": "6a7347c991d638c465eeb000",
+    "clientName": "Pedro Pérez",
+    "clientEmail": "pedroperez@gmail.com",
+    "date": "01-01-2000",
+    "time": "00:00:10",
+    "status": false,
+    "services": []
+}
+
+### crear una nueva reserva con campos faltantes -> Code 400
+POST http://localhost:8081/api/bookings
+Content-Type: application/json;
+
+{
+    "clientName": "CR7",
+    "clientEmail": "siuu7@gmail.com",
+    "status": true,
+    "services": []
+}
+
+### Agrego un servicio a una reserva. todo valido (Cosme Fulanito obtiene el servicio de Cambio de aceite y filtros)
+POST http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb/services/6a713c86f480932c18771a02
+### primer intento. Asigna el servicio
+### segundo intento. quantity en 2
+### tercer intento. quantity en 3
+
+### Con un sid que no existe 
+POST http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb/services/6a713ca4fa480932c1877100
+
+### Con un bid que no existe 
+POST http://localhost:8081/api/bookings/6a713cfbf480932c18771001/services/6a713ca4fa480932c1877100
+
+### Vemos como la reserva de 6a73bcd5599e24402ecdc9fb (Cosme Fulanito)
+GET http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb
+

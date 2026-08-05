@@ -4,7 +4,6 @@ import * as servicesService from '../services/services.service.js';
 const camposRequeridos = ['clientName', 'clientEmail', 'date', 'time', 'status'];
 
 export async function createBooking(booking){
-    const bookings = await bookingsRepository.getAll();
     const faltantes = camposRequeridos.filter( b => {
         const valor = booking[b];
         return valor === undefined ||  valor === null || valor === '';
@@ -16,7 +15,7 @@ export async function createBooking(booking){
 }
 
 export async function getBookingById(id){
-    return await bookingsRepository.getById(id);
+    return await bookingsRepository.getByIdPopulated(id);
 }
 
 export async function addServiceToBooking(bid, sid){
@@ -31,13 +30,19 @@ export async function addServiceToBooking(bid, sid){
     if (!service) {
         return { error: 'Servicio no encontrado' };
     }
-    let itemExistente = booking.services.find(b => b.service === Number(sid));
+    let itemExistente = booking.services.find(b => String(b.service) === String(sid));
+    console.log('itemExistente: ', itemExistente);
     if(itemExistente) {
         itemExistente.quantity += 1;
     }
     else{
-        booking.services.push({ service: Number(sid), quantity: 1 });
+        booking.services.push({ service: sid, quantity: 1 });
     }
+    console.log('------------------------------------------------------');
+    console.log('bid:', bid);
+    console.log('sid:', sid);
+    console.log('booking: ', booking);
+    console.log('------------------------------------------------------');
     return await bookingsRepository.update(bid, booking);
 
 }

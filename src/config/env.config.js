@@ -2,12 +2,13 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const config = {
-  port: Number(process.env.PORT),
+  port: Number(process.env.PORT) || 8080,
   nodeEnv: process.env.NODE_ENV || 'development',
+  mongoUri: process.env.MONGO_URI
 };
 
-if(!config.port){
-    console.error(`FATAL ERROR - PORT no esta definido o no es un numero valido -${config.port}-`);
+if(!config.mongoUri){
+    console.error(`FATAL ERROR - MONGO_URI no esta definida -`);
     process.exit(1);
 }
 console.log(`Configuración cargada en modo: ${config.nodeEnv}`);
