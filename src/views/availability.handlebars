@@ -1,0 +1,14 @@
+<h1>Disponibilidad de servicios</h1>
+
+<ul id="listaDisponibilidad">
+    {{#each services}}
+    <li data-id="{{this._id}}">
+        <strong>{{this.name}}</strong> — {{this.category}}
+        <span class="estado">
+            {{#if this.available}}Disponible{{else}}No disponible{{/if}}
+        </span>
+    </li>
+    {{/each}}
+</ul>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/socket.js"></script>

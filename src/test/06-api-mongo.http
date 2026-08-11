@@ -1,3 +1,4 @@
+
 ### Fusión del archivo '02-api-services.http' y el archivo '03-api-bookings.http'
 ### 02
 ### Para mostrar todos los servicios
@@ -37,7 +38,7 @@ Content-Type: application/json
 }
 
 ### Actualizar un servicio
-PUT http://localhost:8081/api/services/6a731d8f5be8c2b315593cfe
+PUT http://localhost:8081/api/services/6a7b8292773281417cdbfa97
 Content-Type: application/json
 
 {
@@ -53,7 +54,7 @@ Content-Type: application/json
 }
 
 ### Eliminar un servicio
-DELETE http://localhost:8081/api/services/6a731d8f5be8c2b315593cfe
+DELETE http://localhost:8081/api/services/6a7b8292773281417cdbfa97
 
 ### Eliminar un servicio con id inexistente
 DELETE http://localhost:8081/api/services/6a7311f074b2b10fcb4fc000
@@ -61,7 +62,7 @@ DELETE http://localhost:8081/api/services/6a7311f074b2b10fcb4fc000
 ### ----------------------------------------------------------------------------------------------------------------------
 ### 03
 ### Obtener una reserva por su id
-GET http://localhost:8081/api/bookings/6a7359b65c8734f64ff4d6d7
+GET http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb
 
 ### Buscamos una reserva que no exista
 GET http://localhost:8081/api/bookings/6a713cfbf480932c18770000
@@ -119,3 +120,10 @@ POST http://localhost:8081/api/bookings/6a713cfbf480932c18771001/services/6a713c
 ### Vemos como la reserva de 6a73bcd5599e24402ecdc9fb (Cosme Fulanito)
 GET http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb
 
+###----------------------------------------------------------------------------------------- Lo nuevo. Para la pre-entrega 7
+PUT http://localhost:8081/api/services/6a713c86f480932c18771a02
+Content-Type: application/json
+
+{
+    "available": true
+}

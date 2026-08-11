@@ -1,6 +1,6 @@
 # Backend Turnos y Reservas
 
-Sistema backend para la gestión de servicios, turnos y reservas, desarrollado con Node.js utilizando módulos ESM (ECMAScript Modules) y persistencia en MongoDB Atlas mediante Mongoose. Este proyecto se construye de forma incremental a lo largo del curso de Desarrollo Backend.
+Sistema backend para la gestión de servicios, turnos y reservas, desarrollado con Node.js utilizando módulos ESM (ECMAScript Modules), persistencia en MongoDB Atlas mediante Mongoose, vistas del lado del servidor con Handlebars y comunicación en tiempo real con Socket.io. Este proyecto se construye de forma incremental a lo largo del curso de Desarrollo Backend.
 
 ## Estado del proyecto
 
@@ -10,9 +10,9 @@ Sistema backend para la gestión de servicios, turnos y reservas, desarrollado c
 - [x] Módulo 4: Organización en routes, controllers y managers
 - [x] Módulo 5: Arquitectura en capas (services, repositories, DAO)
 - [x] Módulo 6: Migración a MongoDB Atlas con Mongoose
-- [ ] Módulo 7: Vistas con Handlebars y WebSockets
+- [x] Módulo 7: Vistas con Handlebars y comunicación en tiempo real con Socket.io
 - [ ] Módulo 8: Consultas Avanzadas, Validación y Populate
-- [ ] Módulo 9: Proyecto Final integrador
+- [ ] Entrega FInal
 
 ## Funcionalidades implementadas
 
@@ -20,13 +20,13 @@ Sistema backend para la gestión de servicios, turnos y reservas, desarrollado c
 - Gestión segura de variables de entorno con `dotenv` y validación fail-fast
 - Servidor Express con API REST para los recursos `services` y `bookings`
 - Arquitectura en capas: routes → controllers → services → repositories → DAO, con responsabilidades separadas
-- Lógica de negocio (validaciones, regla de `quantity` incremental) desacoplada por completo del acceso a datos
-- Persistencia en MongoDB Atlas mediante Mongoose, con conexión validada bajo el patrón fail-fast (la app no arranca si `MONGO_URI` falta o la conexión falla)
-- Referencia entre `bookings` y `services` mediante `ObjectId`, evitando duplicar información entre colecciones. La reserva expone el servicio completo mediante `populate` solo en las consultas de lectura pensadas para mostrarse al cliente
-- Modelo base para el recurso `messages`, preparado para su uso en el Módulo 7
-- Manejo de errores en dos niveles: middleware de errores centralizado que distingue errores de datos inválidos (ids mal formados, validaciones de schema) de errores internos, evitando exponer detalles del servidor al cliente
+- Persistencia en MongoDB Atlas mediante Mongoose, con conexión validada bajo el patrón fail-fast
+- Referencia entre `bookings` y `services` mediante `ObjectId`, con `populate` para las consultas de lectura destinadas a mostrarse
+- Vistas del lado del servidor con Handlebars (`/views/services`, `/views/availability`), alimentadas por la misma arquitectura en capas que la API REST
+- Comunicación en tiempo real con Socket.io: al actualizar la disponibilidad de un servicio, la vista `/views/availability` se actualiza en el navegador sin recargar la página
+- Manejo de errores en dos niveles: middleware de errores centralizado que distingue errores de datos inválidos (ids mal formados, validaciones de schema) de errores internos
 
-En próximos módulos se incorporarán vistas con Handlebars, WebSockets (usando el recurso `messages`) y consultas avanzadas con validación y `populate`.
+En el próximo módulo se incorporarán consultas avanzadas, validaciones adicionales y un uso más profundo de `populate`.
 
 ## Instalación
 
@@ -37,6 +37,7 @@ git clone https://github.com/leannmeier/CH-Project-Backend_I.git
 cd "CH-Project-Backend_I"
 npm install
 ```
+
 Requiere Node.js v20 o superior.
 
 ## Variables de entorno
@@ -57,7 +58,7 @@ cp .env.example .env
 
 `MONGO_URI` corresponde a un cluster de [MongoDB Atlas](https://www.mongodb.com/cloud/atlas). Es necesario habilitar el acceso a la IP correspondiente desde *Network Access* en el panel de Atlas.
 
-La aplicación valida al iniciar que las variables críticas estén presentes, y valida la conexión real a la base de datos antes de levantar el servidor. Si algo falla, el proceso se detiene con un mensaje de error descriptivo (patrón *fail-fast*), evitando que la app arranque en un estado inconsistente.
+La aplicación valida al iniciar que las variables críticas estén presentes, y valida la conexión real a la base de datos antes de levantar el servidor. Si algo falla, el proceso se detiene con un mensaje de error descriptivo (patrón *fail-fast*).
 
 ## Ejecución
 
@@ -65,6 +66,7 @@ La aplicación valida al iniciar que las variables críticas estén presentes, y
 npm start       # ejecuta el proyecto
 npm run dev     # ejecuta el proyecto con reinicio automático ante cambios (node --watch)
 ```
+
 El servidor queda disponible en `http://localhost:<PORT>` (por defecto, `http://localhost:8081`). Al iniciar, valida la conexión a MongoDB antes de aceptar peticiones.
 
 ## Arquitectura del proyecto
@@ -77,48 +79,49 @@ Cliente → Router → Controller → Service → Repository → DAO → MongoDB
 
 | Capa | Responsabilidad |
 |---|---|
-| **routes/** | Define los endpoints disponibles y los conecta con su controller. No contiene lógica propia. |
-| **controllers/** | Recibe la petición (`req.params`, `req.query`, `req.body`), llama al service correspondiente y responde al cliente (`res.status().json()`). No accede a la persistencia ni conoce reglas de negocio. |
-| **services/** | Contiene la lógica de negocio: validación de campos obligatorios y la regla de incrementar `quantity` cuando un servicio ya está asociado a una reserva. No conoce `req`/`res`, ni sabe si los datos vienen de MongoDB o de otro origen. |
-| **repositories/** | Ofrece métodos genéricos de acceso a datos (`getAll`, `getById`, `create`, `update`, `delete`) para que la capa service no necesite conocer los detalles de Mongoose. |
-| **dao/mongo/** | Interactúa directamente con MongoDB a través de los modelos de Mongoose (`dao/models/`). Es la única capa que conoce la existencia de Mongoose y de la base de datos. |
-| **dao/models/** | Define los Schemas y Models de Mongoose (`service.model.js`, `booking.model.js`, `message.model.js`), incluyendo tipos, validaciones y referencias entre colecciones. |
+| **routes/** | Define los endpoints disponibles (tanto de API como de vistas) y los conecta con su controller. |
+| **controllers/** | Recibe la petición, llama al service correspondiente y responde al cliente (JSON en la API, HTML renderizado en las vistas). No accede a la persistencia ni conoce reglas de negocio. |
+| **services/** | Contiene la lógica de negocio: validaciones, la regla de `quantity` incremental, y la emisión de eventos de Socket.io tras una actualización relevante. No conoce `req`/`res`. |
+| **repositories/** | Ofrece métodos genéricos de acceso a datos, independientes de Mongoose. |
+| **dao/mongo/** | Interactúa directamente con MongoDB a través de los modelos de Mongoose. Es la única capa que conoce la existencia de Mongoose. |
+| **dao/models/** | Define los Schemas y Models de Mongoose. |
 
-Cada recurso tiene su propio conjunto de archivos por capa, siguiendo la convención `<recurso>.<capa>.js` (por ejemplo, `services.service.js`, `services.mongo.dao.js`).
+### Vistas (Handlebars)
 
-### Ejemplo de flujo: crear un servicio
-
-```
-POST /api/services
-  → services.router.js
-  → addService (controller)
-  → services.service.js → createService()   (valida campos obligatorios)
-  → services.repository.js → create()
-  → services.mongo.dao.js → create()         (ServiceModel.create(), Mongo genera el _id)
-```
-
-### Ejemplo de flujo con dependencia entre recursos: agregar un servicio a una reserva
+Las vistas no constituyen una arquitectura paralela: `views.router.js` conecta cada ruta con `views.controller.js`, y este llama a la misma capa `services/` que usan los controllers de la API REST. Ninguna vista contiene datos hardcodeados ni accede directamente a un repository o al DAO.
 
 ```
-POST /api/bookings/:bid/services/:sid
-  → bookings.router.js
-  → addServiceToBooking (controller)
-  → bookings.service.js → addServiceToBooking()
-      (obtiene la reserva SIN poblar, valida que el servicio exista
-       consultando services.service.js, aplica la regla de quantity
-       incremental sobre los ObjectId crudos)
-  → bookings.repository.js → update()
-  → bookings.mongo.dao.js → update()         (findByIdAndUpdate, devuelve el documento actualizado)
+GET /views/services
+  → views.router.js
+  → renderServices (views.controller.js)
+  → services.service.js → getServices()
+  → res.render('services', { services })
 ```
 
-La comunicación entre los recursos `bookings` y `services` ocurre siempre a nivel de la capa service (`bookings.service.js` llama a `services.service.js`), nunca saltando directamente a un repository o DAO de otro recurso.
+Los documentos de Mongoose se convierten a objetos planos (`.toObject()`) en `views.controller.js` antes de pasarlos a Handlebars, ya que el motor de plantillas no puede acceder a las propiedades de una instancia de Mongoose directamente.
 
-### `populate`: lectura para mostrar vs. lectura para modificar
+### Comunicación en tiempo real (Socket.io)
 
-`bookings.mongo.dao.js` expone dos formas de obtener una reserva por id:
+La instancia de Socket.io (`io`) se crea en `server.js`, junto con el servidor HTTP que envuelve a Express. Como `io` debe estar disponible desde capas que no conocen `server.js` (en este caso, `services.service.js`), se centraliza en `src/config/socket.config.js`, siguiendo el mismo criterio que `database.config.js`: una pieza de infraestructura compartida, no un recurso con operaciones CRUD propias, por lo que no se modeló como una capa adicional de service/repository/DAO.
 
-- `getById`: devuelve el documento con los `ObjectId` de `services` sin resolver. Se usa cuando la reserva necesita ser modificada y comparada (por ejemplo, en `addServiceToBooking`), ya que operar sobre un documento poblado puede introducir inconsistencias al volver a guardarlo.
-- `getByIdPopulated`: devuelve el documento con `services.service` resuelto mediante `populate`, trayendo el detalle completo de cada servicio asociado. Se usa exclusivamente para las consultas de lectura expuestas al cliente (`GET /api/bookings/:bid`).
+```
+server.js         → crea io, lo registra con setIO(io)
+socket.config.js  → guarda y expone la instancia (setIO / getIO)
+services.service.js → getIO().emit('availabilityUpdated', servicio) tras una actualización exitosa
+public/js/socket.js → escucha 'availabilityUpdated' en el navegador y actualiza el DOM
+```
+
+Flujo completo, actualizar la disponibilidad de un servicio:
+
+```
+PUT /api/services/:sid
+  → services.router.js → updateService (controller)
+  → services.service.js → updateService()
+      (actualiza en MongoDB vía repository/DAO, y si tuvo éxito,
+       emite 'availabilityUpdated' con el documento actualizado)
+  → cualquier navegador con /views/availability abierta recibe
+    el evento y actualiza el estado del servicio sin recargar
+```
 
 ## Estructura del proyecto
 
@@ -129,10 +132,12 @@ backend-turnos-reservas/
 │   ├── server.js
 │   ├── config/
 │   │   ├── env.config.js
-│   │   └── database.config.js
+│   │   ├── database.config.js
+│   │   └── socket.config.js
 │   ├── controllers/
 │   │   ├── services.controller.js
-│   │   └── bookings.controller.js
+│   │   ├── bookings.controller.js
+│   │   └── views.controller.js
 │   ├── dao/
 │   │   ├── models/
 │   │   │   ├── service.model.js
@@ -149,12 +154,23 @@ backend-turnos-reservas/
 │   │   └── bookings.repository.js
 │   ├── routes/
 │   │   ├── services.router.js
-│   │   └── bookings.router.js
+│   │   ├── bookings.router.js
+│   │   └── views.router.js
 │   ├── services/
 │   │   ├── services.service.js
 │   │   └── bookings.service.js
+│   ├── views/
+│   │   ├── layouts/
+│   │   │   └── main.handlebars
+│   │   ├── services.handlebars
+│   │   └── availability.handlebars
+│   ├── public/
+│   │   ├── css/
+│   │   │   └── styles.css
+│   │   └── js/
+│   │       └── socket.js
 │   ├── test/
-│   │   └── 06-api-mongo.http
+│   │   └── 06-api-mongo.http (editado)
 │   └── utils/
 │       └── asyncHandler.js
 ├── .env.example
@@ -163,9 +179,19 @@ backend-turnos-reservas/
 └── README.md
 ```
 
+## Vistas disponibles
+
+### `GET /views/services`
+
+Lista todos los servicios registrados, mostrando nombre, descripción, duración, precio, categoría y disponibilidad.
+
+### `GET /views/availability`
+
+Lista los servicios con foco en su estado de disponibilidad. Se actualiza en tiempo real: si la disponibilidad de un servicio cambia mediante `PUT /api/services/:sid`, todos los navegadores con esta vista abierta reflejan el cambio sin recargar la página.
+
 ## Recurso: Services
 
-Un servicio representa una actividad que puede reservarse dentro del sistema de turnos (por ejemplo, un servicio de mantenimiento, estética o diagnóstico).
+Un servicio representa una actividad que puede reservarse dentro del sistema de turnos.
 
 ### Estructura de un servicio
 
@@ -182,17 +208,6 @@ Un servicio representa una actividad que puede reservarse dentro del sistema de 
   "updatedAt": "2026-08-04T01:13:08.906Z"
 }
 ```
-
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `_id` | ObjectId | Identificador único, generado automáticamente por MongoDB. No se recibe como parámetro ni puede modificarse. |
-| `name` | string | Nombre del servicio. |
-| `description` | string | Descripción detallada del servicio. |
-| `duration` | string | Duración estimada del servicio. |
-| `price` | number | Precio del servicio. |
-| `category` | string | Categoría a la que pertenece el servicio. |
-| `available` | boolean | Indica si el servicio está disponible para reservar. |
-| `createdAt` / `updatedAt` | date | Generados automáticamente por Mongoose (`timestamps`). |
 
 La persistencia de los servicios se realiza en la colección `services` de MongoDB.
 
@@ -216,19 +231,7 @@ Una reserva representa un turno solicitado por un cliente, con uno o más servic
 }
 ```
 
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `_id` | ObjectId | Identificador único, generado automáticamente por MongoDB. |
-| `clientName` | string | Nombre del cliente que realiza la reserva. |
-| `clientEmail` | string | Email de contacto del cliente. |
-| `date` | string | Fecha del turno. |
-| `time` | string | Horario del turno. |
-| `status` | boolean | Estado de la reserva. |
-| `services` | array | Servicios asociados a la reserva. Puede iniciarse vacío. |
-
-Cada entrada de `services` referencia un servicio mediante su `ObjectId` (campo `service`, con `ref` a la colección `services`), y tiene su propio `_id` de subdocumento asignado por Mongoose. Si un servicio ya está asociado a la reserva y se vuelve a agregar, se incrementa `quantity` en vez de crear una entrada duplicada. Esta regla se aplica en `bookings.service.js`, nunca en el DAO.
-
-Al consultar una reserva mediante `GET /api/bookings/:bid`, el campo `service` de cada entrada se devuelve poblado con el documento completo del servicio (ver sección de `populate` en Arquitectura del proyecto).
+Cada entrada de `services` referencia un servicio mediante su `ObjectId`. Si un servicio ya está asociado a la reserva y se vuelve a agregar, se incrementa `quantity` en vez de crear una entrada duplicada. Esta regla se aplica en `bookings.service.js`, nunca en el DAO.
 
 La persistencia de las reservas se realiza en la colección `bookings` de MongoDB.
 
@@ -248,110 +251,39 @@ o, en caso de error:
 
 ### Services
 
-#### `GET /api/services`
-
-Devuelve todos los servicios. Acepta filtros opcionales por query params.
-
-| Query param | Ejemplo | Descripción |
+| Método | Ruta | Descripción |
 |---|---|---|
-| `category` | `?category=Mantenimiento` | Filtra por categoría exacta |
-| `available` | `?available=true` | Filtra por disponibilidad |
-
-- **200**: `{ "status": "success", "payload": [ /* array de servicios */ ] }`
-
-#### `GET /api/services/:sid`
-
-Devuelve un servicio según su `_id`.
-
-- **200** si existe: `{ "status": "success", "payload": { ... } }`
-- **400** si `:sid` no tiene el formato de un ObjectId válido: `{ "status": "error", "message": "El id proporcionado no es válido" }`
-- **404** si no existe: `{ "status": "error", "message": "Servicio no encontrado" }`
-
-#### `POST /api/services`
-
-Crea un nuevo servicio. El `_id` lo genera MongoDB automáticamente.
-
-- **201** si se crea correctamente: `{ "status": "success", "payload": { ... } }`
-- **400** si faltan campos obligatorios (`name`, `description`, `duration`, `price`, `category`, `available`): `{ "status": "error", "message": "Faltan campos obligatorios: ..." }`
-
-#### `PUT /api/services/:sid`
-
-Actualiza un servicio existente. Devuelve el documento ya actualizado.
-
-- **200** si existe: `{ "status": "success", "payload": { ... } }`
-- **400** si algún campo enviado no cumple el schema (tipo incorrecto): `{ "status": "error", "message": "..." }`
-- **404** si no existe: `{ "status": "error", "message": "Servicio no encontrado" }`
-
-#### `DELETE /api/services/:sid`
-
-Elimina un servicio según su `_id`.
-
-- **200** si se elimina correctamente: `{ "status": "success", "payload": { ... } }`
-- **404** si no existe: `{ "status": "error", "message": "Servicio no encontrado" }`
+| GET | `/api/services` | Lista todos los servicios. Filtros opcionales `?category=` y `?available=`. |
+| GET | `/api/services/:sid` | Obtiene un servicio por `_id`. |
+| POST | `/api/services` | Crea un servicio. |
+| PUT | `/api/services/:sid` | Actualiza un servicio y emite `availabilityUpdated` por Socket.io. |
+| DELETE | `/api/services/:sid` | Elimina un servicio. |
 
 ### Bookings
 
-#### `POST /api/bookings`
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/api/bookings` | Crea una reserva. `services` es opcional. |
+| GET | `/api/bookings/:bid` | Obtiene una reserva por `_id`, con los servicios poblados. |
+| POST | `/api/bookings/:bid/services/:sid` | Asocia un servicio existente a una reserva existente. Incrementa `quantity` si ya estaba asociado. |
 
-Crea una nueva reserva. El `_id` lo genera MongoDB automáticamente. El campo `services` es opcional; si no se envía, la reserva se crea con `services: []`.
-
-```http
-POST /api/bookings
-Content-Type: application/json
-
-{
-  "clientName": "Ana Torres",
-  "clientEmail": "anatorres@gmail.com",
-  "date": "15-08-2026",
-  "time": "10:30",
-  "status": true
-}
-```
-
-- **201** si se crea correctamente: `{ "status": "success", "payload": { ... } }`
-- **400** si faltan campos obligatorios: `{ "status": "error", "message": "Faltan campos obligatorios: ..." }`
-
-#### `GET /api/bookings/:bid`
-
-Devuelve una reserva según su `_id`, con cada servicio asociado poblado (`populate`).
-
-- **200** si existe: `{ "status": "success", "payload": { ... } }`
-- **404** si no existe: `{ "status": "error", "message": "Reserva no encontrada" }`
-
-#### `POST /api/bookings/:bid/services/:sid`
-
-Agrega un servicio existente a una reserva existente. No requiere body: el servicio a agregar se identifica exclusivamente por el parámetro `:sid` de la URL. Valida que tanto la reserva como el servicio existan. Si el servicio ya estaba asociado a la reserva, incrementa su `quantity` en vez de duplicar la entrada.
-
-```http
-POST /api/bookings/6a7359b65c8734f64ff4d6d7/services/6a713c86f480932c18771a02
-```
-
-- **201** si se asocia correctamente: `{ "status": "success", "payload": { ... /* reserva actualizada */ } }`
-- **404** si la reserva o el servicio no existen: `{ "status": "error", "message": "Reserva no encontrada" }` o `{ "status": "error", "message": "Servicio no encontrado" }`
+Todos los endpoints de creación/actualización responden `400` ante campos faltantes o datos con formato inválido, y `404` cuando el recurso solicitado no existe.
 
 ## Manejo de errores
 
-Las rutas están envueltas con un wrapper (`src/utils/asyncHandler.js`) que captura cualquier error no controlado dentro de un handler asíncrono y lo redirige al middleware de errores de Express, sin necesidad de repetir `try/catch` en cada controller.
-
 El middleware `src/middlewares/errorHandler.js` distingue el tipo de error antes de responder:
 
-- **`CastError`** (Mongoose): el `id` recibido no tiene el formato de un `ObjectId` válido → responde `400` con un mensaje claro.
-- **`ValidationError`** (Mongoose): los datos enviados no cumplen el schema (tipo incorrecto, campo requerido faltante) → responde `400` con el detalle de la validación.
-- **Cualquier otro error**: se registra en consola para depuración y se responde `500` con un mensaje genérico, sin exponer detalles internos del servidor (como stack traces).
+- **`CastError`** (Mongoose): el `id` recibido no tiene el formato de un `ObjectId` válido → `400`.
+- **`ValidationError`** (Mongoose): los datos enviados no cumplen el schema → `400`.
+- **Cualquier otro error**: se registra en consola y se responde `500` sin exponer detalles internos del servidor.
 
-```json
-{ "status": "error", "message": "Error interno del servidor" }
-```
+## Cómo probar el proyecto
 
-Este mecanismo es independiente de los errores de validación de negocio (por ejemplo, campos faltantes o recurso no encontrado), que se manejan explícitamente en la capa de servicios y se comunican con los códigos de estado correspondientes (400, 404).
+**API REST**: cualquier cliente HTTP ([Postman](https://www.postman.com/), [Thunder Client](https://www.thunderclient.com/), [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client)). Los archivos de prueba usados se encuentran en `src/test/`.
 
-## Cómo probar la API
+**Vistas**: abrir directamente `http://localhost:8081/views/services` y `http://localhost:8081/views/availability` en el navegador.
 
-Se puede probar con cualquier cliente HTTP: [Postman](https://www.postman.com/), [Thunder Client](https://www.thunderclient.com/) (extensión de VS Code) o la extensión [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client), usada durante el desarrollo de este proyecto. Los archivos de prueba usados se encuentran en `src/test/`.
-
-Los datos de prueba se cargan mediante los endpoints `POST` de la propia API (no existe un script de migración/seed automático), reutilizando la misma vía que usaría cualquier cliente real.
-
-Se puede inspeccionar visualmente el contenido de la base de datos desde el panel de MongoDB Atlas (*Browse Collections*) o con [MongoDB Compass](https://www.mongodb.com/products/compass).
+**Tiempo real**: con `http://localhost:8081/views/availability` abierta en el navegador, enviar un `PUT /api/services/:sid` cambiando el campo `available` desde un cliente HTTP. La vista debe reflejar el cambio sin recargar la página.
 
 ## Tecnologías utilizadas
 
@@ -359,6 +291,8 @@ Se puede inspeccionar visualmente el contenido de la base de datos desde el pane
 - Express
 - MongoDB Atlas
 - Mongoose
+- express-handlebars
+- Socket.io
 - dotenv
 
 ## Autor
