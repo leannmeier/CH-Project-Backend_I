@@ -1,7 +1,7 @@
 import * as servicesDao from '../dao/mongo/service.mongo.dao.js';
 
-export async function getAll(){
-    return await servicesDao.getAll();
+export async function getAll(opcions){
+    return await servicesDao.getAll(opcions);
 }
 
 export async function getById(id){

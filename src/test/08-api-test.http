@@ -1,0 +1,53 @@
+GET http://localhost:8081/api/services?page=1&limit=3
+
+###
+GET http://localhost:8081/api/services?page=2&limit=3
+
+###
+GET http://localhost:8081/api/services?category=Mantenimiento
+
+###
+GET http://localhost:8081/api/services?available=false
+
+###
+GET http://localhost:8081/api/services?sortBy=price&order=asc
+
+###
+GET http://localhost:8081/api/services?sortBy=price&order=desc
+
+###
+GET http://localhost:8081/api/services?category=Neumáticos&sortBy=price&order=desc&page=1&limit=5
+
+###
+POST http://localhost:8081/api/services
+Content-Type: application/json
+
+{ 
+    "name": "Taxidermia", 
+    "description": "Arte y oficio de disecar animales muertos para conservarlos con una apariencia realista y de vida", 
+    "duration": "1 hora", 
+    "price": "cien", 
+    "category": "Turbio", 
+    "available": true 
+}
+
+###
+POST http://localhost:8081/api/bookings
+Content-Type: application/json
+
+{ 
+    "clientName": "El señor x", 
+    "clientEmail": "no-es-un-email", 
+    "date": "01-01-2026", 
+    "time": "10:00" 
+}
+
+###
+POST http://localhost:8081/api/bookings/a7/services/a7
+
+
+###
+GET http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb
+
+###
+POST http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb/services/6a713ca8f480932c18771a07

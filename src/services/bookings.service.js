@@ -31,18 +31,11 @@ export async function addServiceToBooking(bid, sid){
         return { error: 'Servicio no encontrado' };
     }
     let itemExistente = booking.services.find(b => String(b.service) === String(sid));
-    console.log('itemExistente: ', itemExistente);
     if(itemExistente) {
         itemExistente.quantity += 1;
     }
     else{
         booking.services.push({ service: sid, quantity: 1 });
     }
-    console.log('------------------------------------------------------');
-    console.log('bid:', bid);
-    console.log('sid:', sid);
-    console.log('booking: ', booking);
-    console.log('------------------------------------------------------');
     return await bookingsRepository.update(bid, booking);
-
 }

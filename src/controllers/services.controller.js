@@ -2,15 +2,8 @@ import * as servicesService from '../services/services.service.js'
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const getServices = asyncHandler(async (req, res) => {
-    let services = await servicesService.getServices();
-    const { category, available } = req.query;
-    if(category){
-        services = services.filter(s => s.category === category)
-    }
-    if(available !== undefined){
-        services = services.filter(s => s.available === (available === 'true'));
-    }
-    res.status(200).json( { status: 'success', payload: services } );
+    const result = await servicesService.getServices(req.query);
+    res.status(200).json(result);
 });
 
 export const getServiceById = asyncHandler(async (req, res) => {

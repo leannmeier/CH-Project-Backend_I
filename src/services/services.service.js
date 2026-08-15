@@ -3,8 +3,39 @@ import { getIO } from '../config/socket.config.js';
 
 const camposRequeridos = ['name', 'description', 'duration', 'price', 'category', 'available'];
 
-export async function getServices(){
-    return await servicesRepository.getAll();
+export async function getServices(query) {
+    const { category, available, page = 1, limit = 10, sortBy = 'price', order = 'asc' } = query;
+
+    const filter = {};
+    if (category) filter.category = category;
+    if (available) filter.available = available === 'true';
+
+    const skip = (page - 1) * limit;
+
+    const sortOption = {};
+    if (order === 'asc') sortOption[sortBy] = 1;
+    if (order === 'desc') sortOption[sortBy] = -1;
+
+    const { services, total } = await servicesRepository.getAll({ filter, skip, limit: Number(limit), sort: sortOption });
+
+    const totalPages = Math.ceil(total / limit);
+    const hasPrevPage = page > 1;
+    const hasNextPage = page < totalPages;
+    const prevPage = hasPrevPage ? Number(page) - 1 : null;
+    const nextPage = hasNextPage ? Number(page) + 1 : null;
+
+    return {
+        status: 'success',
+        payload: services,
+        totalPages,
+        prevPage,
+        nextPage,
+        page: Number(page),
+        hasPrevPage,
+        hasNextPage,
+        prevLink: hasPrevPage ? `/api/services?page=${prevPage}&limit=${limit}` : null,
+        nextLink: hasNextPage ? `/api/services?page=${nextPage}&limit=${limit}` : null
+    };
 }
 
 export async function getServiceById(id){
