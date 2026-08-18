@@ -1,0 +1,96 @@
+GET http://localhost:8081/api/services?page=1&limit=3
+
+###
+GET http://localhost:8081/api/services?page=2&limit=3
+
+###
+GET http://localhost:8081/api/services?category=Mantenimiento
+
+###
+GET http://localhost:8081/api/services?available=false
+
+###
+GET http://localhost:8081/api/services?sortBy=price&order=asc
+
+###
+GET http://localhost:8081/api/services?sortBy=price&order=desc
+
+###
+GET http://localhost:8081/api/services?category=Neumáticos&sortBy=price&order=desc&page=1&limit=5
+
+###
+POST http://localhost:8081/api/services
+Content-Type: application/json
+
+{ 
+    "name": "Taxidermia", 
+    "description": "Arte y oficio de disecar animales muertos para conservarlos con una apariencia realista y de vida", 
+    "duration": "1 hora", 
+    "price": "cien", 
+    "category": "Turbio", 
+    "available": true 
+}
+
+###
+POST http://localhost:8081/api/bookings
+Content-Type: application/json
+
+{ 
+    "clientName": "El señor x", 
+    "clientEmail": "no-es-un-email", 
+    "date": "01-01-2026", 
+    "time": "10:00" 
+}
+
+###
+POST http://localhost:8081/api/bookings/a7/services/a7
+
+
+###
+GET http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb
+
+###
+POST http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb/services/6a713ca8f480932c18771a07
+
+###------------------------------------------- pruebas módulo 9
+
+GET http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb
+### Actualmente tiene el servicio de 6a713ca8f480932c18771a07 con quantity = 1
+
+###
+PUT http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb/services/6a713ca8f480932c18771a07
+Content-Type: application/json
+
+{
+    "quantity": 5
+}
+### Exitoso. 200 y devolvio el documento actualizado.
+
+### Intentare el mismo caso pero mandando un quantity negativo
+PUT http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb/services/6a713ca8f480932c18771a07
+Content-Type: application/json
+
+{
+    "quantity": -4
+}
+### Exitoso. 400 -> "Too small: expected number to be >0"
+
+### Ahora a un servicio que no se encuentre asociado a esa reserva:
+PUT http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb/services/6a713ca8f480932c18700000
+Content-Type: application/json
+
+{
+    "quantity": 5
+}
+### Exitoso. 404 -> "Servicio no encontrado dentro de la reserva"
+
+### Eliminaremos un servicio de una reserva (todo existente)
+DELETE http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb/services/6a713ca8f480932c18771a07
+### 200 -> Me devuelve el servicio sin la reserva. Como tenia 1 solo servicio, me devuelve el array de services vacio
+### Intento nuevamente borrar, ahora algo que no existe en la reserva pero que existe en la base de services
+### 404 -> "Servicio no encontrado dentro de la reserva"
+
+### Eliminamos la reserva completa
+DELETE http://localhost:8081/api/bookings/6a73bcd5599e24402ecdc9fb
+### 200 -> Y devuelve el documento
+### 404 -> "Reserva no encontrada"

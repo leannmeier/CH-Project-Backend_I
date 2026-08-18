@@ -15,3 +15,15 @@ export async function create(data){
 export async function update(id, updateData) {
     return await bookingsDao.update(id, updateData);
 }
+
+export async function removeService(bid, sid){
+    return await bookingsDao.removeService(bid, sid);
+}
+
+export async function updateServiceQuantity(bid, sid, quantity){
+    return await bookingsDao.updateServiceQuantity(bid, sid, quantity);
+}
+
+export async function _delete(bid){
+    return await bookingsDao._delete(bid);
+}

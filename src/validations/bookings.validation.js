@@ -16,3 +16,11 @@ export const bookingParamsSchema = z.object({
     bid: z.string().regex(/^[0-9a-fA-F]{24}$/),
     sid: z.string().regex(/^[0-9a-fA-F]{24}$/)
 });
+
+export const bidParamSchema = z.object({
+    bid: z.string().regex(/^[0-9a-fA-F]{24}$/)
+});
+
+export const updateQuantitySchema = z.object({
+    quantity: z.number().positive()
+});

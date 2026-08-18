@@ -29,3 +29,31 @@ export const addServiceToBooking = asyncHandler(async (req, res) => {
     }
     res.status(201).json({ status: 'success', payload: booking });
 })
+
+export const deleteServiceToBooking = asyncHandler(async (req,res) => {
+    const { bid, sid } = req.params;
+    const booking = await bookingsService.deleteServiceToBooking(bid, sid);
+    if(booking?.error){
+        return res.status(404).json({ status: 'error', message: booking.error });
+    }
+    res.status(200).json({ status: 'success', payload: booking });
+})
+
+export const updateQuantity = asyncHandler(async (req, res) => {
+    const { bid, sid } = req.params;
+    const { quantity } = req.body;
+    const booking = await bookingsService.updateQuantity(bid, sid, quantity);
+    if (booking?.error) {
+        return res.status(404).json({ status: 'error', message: booking.error });
+    }
+    res.status(200).json({ status: 'success', payload: booking });
+});
+
+export const deleteBooking = asyncHandler(async (req, res) => {
+    const { bid } = req.params;
+    const booking = await bookingsService.deleteBooking(bid);
+    if(booking?.error){
+        return res.status(404).json({ status: 'error', message: booking.error });
+    }
+    res.status(200).json({ status: 'success', payload: booking });
+})

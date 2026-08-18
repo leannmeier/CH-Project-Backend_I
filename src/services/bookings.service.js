@@ -39,3 +39,38 @@ export async function addServiceToBooking(bid, sid){
     }
     return await bookingsRepository.update(bid, booking);
 }
+
+export async function deleteServiceToBooking(bid, sid){
+    let booking = await bookingsRepository.getById(bid);
+    if (!booking) {
+        return { error: 'Reserva no encontrada' };
+    }
+    let service = booking.services.find(s => String(s.service) === String(sid));
+    if (!service) {
+        return { error: 'Servicio no encontrado dentro de la reserva' };
+    }
+    return await bookingsRepository.removeService(bid, sid);
+}
+
+export async function updateQuantity(bid, sid, quantity){
+    let booking = await bookingsRepository.getById(bid);
+    if (!booking) {
+        return { error: 'Reserva no encontrada' };
+    }
+    let service = booking.services.find(s => String(s.service) === String(sid));
+    if (!service) {
+        return { error: 'Servicio no encontrado dentro de la reserva' };
+    }
+    if (quantity <= 0) {
+        return { error: 'La cantidad de un servicio debe ser positiva' };
+    }
+    return await bookingsRepository.updateServiceQuantity(bid, sid, quantity);
+}
+
+export async function deleteBooking(bid){
+    const booking = await bookingsRepository.getById(bid);
+    if(!booking){
+        return { error: 'Reserva no encontrada' };
+    }
+    return await bookingsRepository._delete(bid);
+}
